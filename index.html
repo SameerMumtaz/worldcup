@@ -149,6 +149,36 @@
   .champion .team{font-family:'Bebas Neue',sans-serif; font-size:38px; letter-spacing:.02em; margin-top:6px; display:flex; align-items:center; justify-content:center; gap:13px; line-height:1}
   .champion .team .flag{font-size:32px}
   .champion .note{font-size:11px; color:var(--muted); margin-top:8px}
+
+  /* ===== FORECAST ===== */
+  .fc-controls{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:18px}
+  .fc-prog{flex:1; min-width:120px; height:6px; background:var(--panel2); border-radius:3px; overflow:hidden; opacity:0; transition:opacity .3s}
+  .fc-prog.on{opacity:1}
+  .fc-prog-bar{height:100%; width:0%; background:linear-gradient(90deg,var(--gold),#f0d875); border-radius:3px; transition:width .12s linear}
+  .fc-headline{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:20px}
+  .fc-hcard{flex:1; min-width:150px; background:linear-gradient(150deg,var(--panel),var(--bg2)); border:1px solid var(--line); border-radius:14px; padding:16px 18px}
+  .fc-hcard .k{font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--faint)}
+  .fc-hcard .v{font-family:'Bebas Neue',sans-serif; font-size:30px; line-height:1; margin-top:6px; display:flex; align-items:center; gap:10px}
+  .fc-hcard .v .flag{font-size:26px}
+  .fc-hcard .v .pct{color:var(--gold)}
+  .fc-hcard.spot{border-color:var(--gold-dim); background:linear-gradient(150deg,rgba(212,175,55,.10),var(--bg2))}
+  .fcrow{display:grid; grid-template-columns:22px 1.3fr 2.4fr auto; gap:10px; align-items:center; padding:7px 0; border-bottom:1px solid var(--line2)}
+  .fcrow .rk{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--faint); text-align:right}
+  .fcrow .tm{display:flex; align-items:center; gap:8px; font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .fcrow .tm .flag{font-size:17px}
+  .fcrow.me .tm{color:var(--dallas)}
+  .fcbar{position:relative; height:22px; background:var(--panel2); border-radius:6px; overflow:hidden}
+  .fcbar .fill{position:absolute; inset:0 auto 0 0; background:linear-gradient(90deg,var(--gold),rgba(212,175,55,.45)); border-radius:6px; width:0; transition:width .25s cubic-bezier(.4,1.3,.5,1)}
+  .fcbar .seg2{position:absolute; top:0; bottom:0; background:rgba(255,255,255,.08); transition:all .25s}
+  .fcbar .lab{position:absolute; left:8px; top:50%; transform:translateY(-50%); font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; color:#1a1408; mix-blend-mode:luminosity; z-index:2}
+  .fccols{font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--muted); text-align:right; min-width:96px; letter-spacing:.02em}
+  .fccols b{color:var(--txt)}
+  .fc-legend{display:flex; gap:16px; margin:10px 0 4px; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--faint); letter-spacing:.04em}
+  .fc-legend span::before{content:'■ '; }
+  .sweep{color:var(--gold)} .sweep2{color:rgba(255,255,255,.4)}
+
+  /* ===== CONFETTI ===== */
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:9999}
   .r32 .slot .code{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); margin-left:auto}
 
   /* ===== MODAL ===== */
@@ -200,10 +230,11 @@
 
   <div class="controls">
     <div class="seg" id="view-seg">
-      <button data-v="groups" class="on">Group Tables</button>
+      <button data-v="groups" class="on">Groups</button>
       <button data-v="fixtures">Fixtures</button>
       <button data-v="r32">Bracket</button>
-      <button data-v="market">Live Odds</button>
+      <button data-v="market">Odds</button>
+      <button data-v="forecast">Forecast</button>
     </div>
     <label class="toggle" id="auto-wrap"><span class="switch" id="auto-sw"><span class="k"></span></span> Auto-sync</label>
     <label class="toggle" id="pred-wrap"><span class="switch on" id="pred-sw"><span class="k"></span></span> vs predicted</label>
@@ -250,6 +281,25 @@
     <div id="market"></div>
   </section>
 
+  <!-- FORECAST (Monte Carlo) -->
+  <section id="view-forecast" class="hide">
+    <div class="sec-head"><h2>Title Forecast</h2><span class="meta" id="fc-meta">Monte Carlo · simulate the rest of the tournament</span></div>
+    <div class="banner warn" style="display:flex;margin-bottom:16px">
+      <span>Runs the whole tournament thousands of times from <b style="color:var(--gold)">current results</b>, simulating every remaining match with a Bradley–Terry model fed by <b style="color:var(--gold)">live market odds</b>. Real results stay fixed; the rest is rolled the dice. Watch the bars converge as the sample grows.</span>
+    </div>
+    <div class="fc-controls">
+      <div class="seg" id="fc-n">
+        <button data-n="2000">2K</button>
+        <button data-n="10000" class="on">10K</button>
+        <button data-n="50000">50K</button>
+      </div>
+      <button class="btn primary" id="fc-run">⚡ Run forecast</button>
+      <div class="fc-prog" id="fc-prog"><div class="fc-prog-bar" id="fc-prog-bar"></div></div>
+    </div>
+    <div id="fc-headline" class="fc-headline hide"></div>
+    <div id="forecast"></div>
+  </section>
+
   <footer id="foot"></footer>
 </div>
 
@@ -290,8 +340,8 @@ const POLY_URL = 'https://gamma-api.polymarket.com/events?slug=world-cup-winner'
 
 // Built-in snapshot so the app always renders, even with no network / in a
 // sandboxed preview. Live sync layers fresher data on top when available.
-const EMBEDDED_DATA = {"name":"World Cup 2026","matches":[{"round":"Matchday 1","date":"2026-06-11","time":"13:00 UTC-6","team1":"Mexico","team2":"South Africa","score":{"ft":[2,0]},"goals1":[{"name":"Julián Quiñones","minute":"9"},{"name":"Raúl Jiménez","minute":"67"}],"goals2":[],"group":"Group A","ground":"Mexico City"},{"round":"Matchday 1","date":"2026-06-11","time":"20:00 UTC-6","team1":"South Korea","team2":"Czech Republic","score":{"ft":[2,1],"ht":[0,0]},"goals1":[{"name":"Hwang In-Beom","minute":"67"},{"name":"Oh Hyeon-Gyu","minute":"80"}],"goals2":[{"name":"Ladislav Krejcí","minute":"59"}],"group":"Group A","ground":"Guadalajara (Zapopan)"},{"round":"Matchday 8","date":"2026-06-18","time":"12:00 UTC-4","team1":"Czech Republic","team2":"South Africa","group":"Group A","ground":"Atlanta"},{"round":"Matchday 8","date":"2026-06-18","time":"19:00 UTC-6","team1":"Mexico","team2":"South Korea","group":"Group A","ground":"Guadalajara (Zapopan)"},{"round":"Matchday 14","date":"2026-06-24","time":"19:00 UTC-6","team1":"Czech Republic","team2":"Mexico","group":"Group A","ground":"Mexico City"},{"round":"Matchday 14","date":"2026-06-24","time":"19:00 UTC-6","team1":"South Africa","team2":"South Korea","group":"Group A","ground":"Monterrey (Guadalupe)"},{"round":"Matchday 2","date":"2026-06-12","time":"15:00 UTC-4","team1":"Canada","team2":"Bosnia & Herzegovina","score":{"ft":[1,1],"ht":[0,1]},"goals1":[{"name":"Cyle Larin","minute":"78"}],"goals2":[{"name":"Jovo Lukić","minute":"21"}],"group":"Group B","ground":"Toronto"},{"round":"Matchday 3","date":"2026-06-13","time":"12:00 UTC-7","team1":"Qatar","team2":"Switzerland","score":{"ft":[1,1]},"goals1":[{"name":"Boualem Khoukhi","minute":"90+4"}],"goals2":[{"name":"Breel Embolo","minute":"17","penalty":true}],"group":"Group B","ground":"San Francisco Bay Area (Santa Clara)"},{"round":"Matchday 8","date":"2026-06-18","time":"12:00 UTC-7","team1":"Switzerland","team2":"Bosnia & Herzegovina","group":"Group B","ground":"Los Angeles (Inglewood)"},{"round":"Matchday 8","date":"2026-06-18","time":"15:00 UTC-7","team1":"Canada","team2":"Qatar","group":"Group B","ground":"Vancouver"},{"round":"Matchday 14","date":"2026-06-24","time":"12:00 UTC-7","team1":"Switzerland","team2":"Canada","group":"Group B","ground":"Vancouver"},{"round":"Matchday 14","date":"2026-06-24","time":"12:00 UTC-7","team1":"Bosnia & Herzegovina","team2":"Qatar","group":"Group B","ground":"Seattle"},{"round":"Matchday 3","date":"2026-06-13","time":"18:00 UTC-4","team1":"Brazil","team2":"Morocco","score":{"ft":[1,1]},"goals1":[{"name":"Vinícius Júnior","minute":"32"}],"goals2":[{"name":"Ismael Saibari","minute":"21"}],"group":"Group C","ground":"New York/New Jersey (East Rutherford)"},{"round":"Matchday 3","date":"2026-06-13","time":"21:00 UTC-4","team1":"Haiti","team2":"Scotland","score":{"ft":[0,1]},"goals1":[],"goals2":[{"name":"John McGinn","minute":"28"}],"group":"Group C","ground":"Boston (Foxborough)"},{"round":"Matchday 9","date":"2026-06-19","time":"18:00 UTC-4","team1":"Scotland","team2":"Morocco","group":"Group C","ground":"Boston (Foxborough)"},{"round":"Matchday 9","date":"2026-06-19","time":"20:30 UTC-4","team1":"Brazil","team2":"Haiti","group":"Group C","ground":"Philadelphia"},{"round":"Matchday 14","date":"2026-06-24","time":"18:00 UTC-4","team1":"Scotland","team2":"Brazil","group":"Group C","ground":"Miami (Miami Gardens)"},{"round":"Matchday 14","date":"2026-06-24","time":"18:00 UTC-4","team1":"Morocco","team2":"Haiti","group":"Group C","ground":"Atlanta"},{"round":"Matchday 2","date":"2026-06-12","time":"18:00 UTC-7","team1":"USA","team2":"Paraguay","score":{"ft":[4,1]},"goals1":[{"name":"Damian Bobadilla","minute":"7","owngoal":true},{"name":"Folarin Balogun","minute":"31"},{"name":"Folarin Balogun","minute":"45+5"},{"name":"Giovanni Reyna","minute":"90+8"}],"goals2":[{"name":"Mauricio","minute":"73"}],"group":"Group D","ground":"Los Angeles (Inglewood)"},{"round":"Matchday 3","date":"2026-06-13","time":"21:00 UTC-7","team1":"Australia","team2":"Turkey","group":"Group D","ground":"Vancouver"},{"round":"Matchday 9","date":"2026-06-19","time":"12:00 UTC-7","team1":"USA","team2":"Australia","group":"Group D","ground":"Seattle"},{"round":"Matchday 9","date":"2026-06-19","time":"20:00 UTC-7","team1":"Turkey","team2":"Paraguay","group":"Group D","ground":"San Francisco Bay Area (Santa Clara)"},{"round":"Matchday 15","date":"2026-06-25","time":"19:00 UTC-7","team1":"Turkey","team2":"USA","group":"Group D","ground":"Los Angeles (Inglewood)"},{"round":"Matchday 15","date":"2026-06-25","time":"19:00 UTC-7","team1":"Paraguay","team2":"Australia","group":"Group D","ground":"San Francisco Bay Area (Santa Clara)"},{"round":"Matchday 4","date":"2026-06-14","time":"12:00 UTC-5","team1":"Germany","team2":"Curaçao","group":"Group E","ground":"Houston"},{"round":"Matchday 4","date":"2026-06-14","time":"19:00 UTC-4","team1":"Ivory Coast","team2":"Ecuador","group":"Group E","ground":"Philadelphia"},{"round":"Matchday 10","date":"2026-06-20","time":"16:00 UTC-4","team1":"Germany","team2":"Ivory Coast","group":"Group E","ground":"Toronto"},{"round":"Matchday 10","date":"2026-06-20","time":"19:00 UTC-5","team1":"Ecuador","team2":"Curaçao","group":"Group E","ground":"Kansas City"},{"round":"Matchday 15","date":"2026-06-25","time":"16:00 UTC-4","team1":"Curaçao","team2":"Ivory Coast","group":"Group E","ground":"Philadelphia"},{"round":"Matchday 15","date":"2026-06-25","time":"16:00 UTC-4","team1":"Ecuador","team2":"Germany","group":"Group E","ground":"New York/New Jersey (East Rutherford)"},{"round":"Matchday 4","date":"2026-06-14","time":"15:00 UTC-5","team1":"Netherlands","team2":"Japan","group":"Group F","ground":"Dallas (Arlington)"},{"round":"Matchday 4","date":"2026-06-14","time":"20:00 UTC-6","team1":"Sweden","team2":"Tunisia","group":"Group F","ground":"Monterrey (Guadalupe)"},{"round":"Matchday 10","date":"2026-06-20","time":"12:00 UTC-5","team1":"Netherlands","team2":"Sweden","group":"Group F","ground":"Houston"},{"round":"Matchday 10","date":"2026-06-20","time":"22:00 UTC-6","team1":"Tunisia","team2":"Japan","group":"Group F","ground":"Monterrey (Guadalupe)"},{"round":"Matchday 15","date":"2026-06-25","time":"18:00 UTC-5","team1":"Japan","team2":"Sweden","group":"Group F","ground":"Dallas (Arlington)"},{"round":"Matchday 15","date":"2026-06-25","time":"18:00 UTC-5","team1":"Tunisia","team2":"Netherlands","group":"Group F","ground":"Kansas City"},{"round":"Matchday 5","date":"2026-06-15","time":"12:00 UTC-7","team1":"Belgium","team2":"Egypt","group":"Group G","ground":"Seattle"},{"round":"Matchday 5","date":"2026-06-15","time":"18:00 UTC-7","team1":"Iran","team2":"New Zealand","group":"Group G","ground":"Los Angeles (Inglewood)"},{"round":"Matchday 11","date":"2026-06-21","time":"12:00 UTC-7","team1":"Belgium","team2":"Iran","group":"Group G","ground":"Los Angeles (Inglewood)"},{"round":"Matchday 11","date":"2026-06-21","time":"18:00 UTC-7","team1":"New Zealand","team2":"Egypt","group":"Group G","ground":"Vancouver"},{"round":"Matchday 16","date":"2026-06-26","time":"20:00 UTC-7","team1":"Egypt","team2":"Iran","group":"Group G","ground":"Seattle"},{"round":"Matchday 16","date":"2026-06-26","time":"20:00 UTC-7","team1":"New Zealand","team2":"Belgium","group":"Group G","ground":"Vancouver"},{"round":"Matchday 5","date":"2026-06-15","time":"12:00 UTC-4","team1":"Spain","team2":"Cape Verde","group":"Group H","ground":"Atlanta"},{"round":"Matchday 5","date":"2026-06-15","time":"18:00 UTC-4","team1":"Saudi Arabia","team2":"Uruguay","group":"Group H","ground":"Miami (Miami Gardens)"},{"round":"Matchday 11","date":"2026-06-21","time":"12:00 UTC-4","team1":"Spain","team2":"Saudi Arabia","group":"Group H","ground":"Atlanta"},{"round":"Matchday 11","date":"2026-06-21","time":"18:00 UTC-4","team1":"Uruguay","team2":"Cape Verde","group":"Group H","ground":"Miami (Miami Gardens)"},{"round":"Matchday 16","date":"2026-06-26","time":"19:00 UTC-5","team1":"Cape Verde","team2":"Saudi Arabia","group":"Group H","ground":"Houston"},{"round":"Matchday 16","date":"2026-06-26","time":"18:00 UTC-6","team1":"Uruguay","team2":"Spain","group":"Group H","ground":"Guadalajara (Zapopan)"},{"round":"Matchday 6","date":"2026-06-16","time":"15:00 UTC-4","team1":"France","team2":"Senegal","group":"Group I","ground":"New York/New Jersey (East Rutherford)"},{"round":"Matchday 6","date":"2026-06-16","time":"18:00 UTC-4","team1":"Iraq","team2":"Norway","group":"Group I","ground":"Boston (Foxborough)"},{"round":"Matchday 12","date":"2026-06-22","time":"17:00 UTC-4","team1":"France","team2":"Iraq","group":"Group I","ground":"Philadelphia"},{"round":"Matchday 12","date":"2026-06-22","time":"20:00 UTC-4","team1":"Norway","team2":"Senegal","group":"Group I","ground":"New York/New Jersey (East Rutherford)"},{"round":"Matchday 16","date":"2026-06-26","time":"15:00 UTC-4","team1":"Norway","team2":"France","group":"Group I","ground":"Boston (Foxborough)"},{"round":"Matchday 16","date":"2026-06-26","time":"15:00 UTC-4","team1":"Senegal","team2":"Iraq","group":"Group I","ground":"Toronto"},{"round":"Matchday 6","date":"2026-06-16","time":"20:00 UTC-5","team1":"Argentina","team2":"Algeria","group":"Group J","ground":"Kansas City"},{"round":"Matchday 6","date":"2026-06-16","time":"21:00 UTC-7","team1":"Austria","team2":"Jordan","group":"Group J","ground":"San Francisco Bay Area (Santa Clara)"},{"round":"Matchday 12","date":"2026-06-22","time":"12:00 UTC-5","team1":"Argentina","team2":"Austria","group":"Group J","ground":"Dallas (Arlington)"},{"round":"Matchday 12","date":"2026-06-22","time":"20:00 UTC-7","team1":"Jordan","team2":"Algeria","group":"Group J","ground":"San Francisco Bay Area (Santa Clara)"},{"round":"Matchday 17","date":"2026-06-27","time":"21:00 UTC-5","team1":"Algeria","team2":"Austria","group":"Group J","ground":"Kansas City"},{"round":"Matchday 17","date":"2026-06-27","time":"21:00 UTC-5","team1":"Jordan","team2":"Argentina","group":"Group J","ground":"Dallas (Arlington)"},{"round":"Matchday 7","date":"2026-06-17","time":"12:00 UTC-5","team1":"Portugal","team2":"DR Congo","group":"Group K","ground":"Houston"},{"round":"Matchday 7","date":"2026-06-17","time":"20:00 UTC-6","team1":"Uzbekistan","team2":"Colombia","group":"Group K","ground":"Mexico City"},{"round":"Matchday 13","date":"2026-06-23","time":"12:00 UTC-5","team1":"Portugal","team2":"Uzbekistan","group":"Group K","ground":"Houston"},{"round":"Matchday 13","date":"2026-06-23","time":"20:00 UTC-6","team1":"Colombia","team2":"DR Congo","group":"Group K","ground":"Guadalajara (Zapopan)"},{"round":"Matchday 17","date":"2026-06-27","time":"19:30 UTC-4","team1":"Colombia","team2":"Portugal","group":"Group K","ground":"Miami (Miami Gardens)"},{"round":"Matchday 17","date":"2026-06-27","time":"19:30 UTC-4","team1":"DR Congo","team2":"Uzbekistan","group":"Group K","ground":"Atlanta"},{"round":"Matchday 7","date":"2026-06-17","time":"15:00 UTC-5","team1":"England","team2":"Croatia","group":"Group L","ground":"Dallas (Arlington)"},{"round":"Matchday 7","date":"2026-06-17","time":"19:00 UTC-4","team1":"Ghana","team2":"Panama","group":"Group L","ground":"Toronto"},{"round":"Matchday 13","date":"2026-06-23","time":"16:00 UTC-4","team1":"England","team2":"Ghana","group":"Group L","ground":"Boston (Foxborough)"},{"round":"Matchday 13","date":"2026-06-23","time":"19:00 UTC-4","team1":"Panama","team2":"Croatia","group":"Group L","ground":"Toronto"},{"round":"Matchday 17","date":"2026-06-27","time":"17:00 UTC-4","team1":"Panama","team2":"England","group":"Group L","ground":"New York/New Jersey (East Rutherford)"},{"round":"Matchday 17","date":"2026-06-27","time":"17:00 UTC-4","team1":"Croatia","team2":"Ghana","group":"Group L","ground":"Philadelphia"},{"round":"Round of 32","num":73,"date":"2026-06-28","time":"12:00 UTC-7","team1":"2A","team2":"2B","ground":"Los Angeles (Inglewood)"},{"round":"Round of 32","num":74,"date":"2026-06-29","time":"16:30 UTC-4","team1":"1E","team2":"3A/B/C/D/F","ground":"Boston (Foxborough)"},{"round":"Round of 32","num":75,"date":"2026-06-29","time":"19:00 UTC-6","team1":"1F","team2":"2C","ground":"Monterrey (Guadalupe)"},{"round":"Round of 32","num":76,"date":"2026-06-29","time":"12:00 UTC-5","team1":"1C","team2":"2F","ground":"Houston"},{"round":"Round of 32","num":77,"date":"2026-06-30","time":"17:00 UTC-4","team1":"1I","team2":"3C/D/F/G/H","ground":"New York/New Jersey (East Rutherford)"},{"round":"Round of 32","num":78,"date":"2026-06-30","time":"12:00 UTC-5","team1":"2E","team2":"2I","ground":"Dallas (Arlington)"},{"round":"Round of 32","num":79,"date":"2026-06-30","time":"19:00 UTC-6","team1":"1A","team2":"3C/E/F/H/I","ground":"Mexico City"},{"round":"Round of 32","num":80,"date":"2026-07-01","time":"12:00 UTC-4","team1":"1L","team2":"3E/H/I/J/K","ground":"Atlanta"},{"round":"Round of 32","num":81,"date":"2026-07-01","time":"17:00 UTC-7","team1":"1D","team2":"3B/E/F/I/J","ground":"San Francisco Bay Area (Santa Clara)"},{"round":"Round of 32","num":82,"date":"2026-07-01","time":"13:00 UTC-7","team1":"1G","team2":"3A/E/H/I/J","ground":"Seattle"},{"round":"Round of 32","num":83,"date":"2026-07-02","time":"19:00 UTC-4","team1":"2K","team2":"2L","ground":"Toronto"},{"round":"Round of 32","num":84,"date":"2026-07-02","time":"12:00 UTC-7","team1":"1H","team2":"2J","ground":"Los Angeles (Inglewood)"},{"round":"Round of 32","num":85,"date":"2026-07-02","time":"20:00 UTC-7","team1":"1B","team2":"3E/F/G/I/J","ground":"Vancouver"},{"round":"Round of 32","num":86,"date":"2026-07-03","time":"18:00 UTC-4","team1":"1J","team2":"2H","ground":"Miami (Miami Gardens)"},{"round":"Round of 32","num":87,"date":"2026-07-03","time":"20:30 UTC-5","team1":"1K","team2":"3D/E/I/J/L","ground":"Kansas City"},{"round":"Round of 32","num":88,"date":"2026-07-03","time":"13:00 UTC-5","team1":"2D","team2":"2G","ground":"Dallas (Arlington)"},{"round":"Round of 16","num":89,"date":"2026-07-04","time":"17:00 UTC-4","team1":"W74","team2":"W77","ground":"Philadelphia"},{"round":"Round of 16","num":90,"date":"2026-07-04","time":"12:00 UTC-5","team1":"W73","team2":"W75","ground":"Houston"},{"round":"Round of 16","num":91,"date":"2026-07-05","time":"16:00 UTC-4","team1":"W76","team2":"W78","ground":"New York/New Jersey (East Rutherford)"},{"round":"Round of 16","num":92,"date":"2026-07-05","time":"18:00 UTC-6","team1":"W79","team2":"W80","ground":"Mexico City"},{"round":"Round of 16","num":93,"date":"2026-07-06","time":"14:00 UTC-5","team1":"W83","team2":"W84","ground":"Dallas (Arlington)"},{"round":"Round of 16","num":94,"date":"2026-07-06","time":"17:00 UTC-7","team1":"W81","team2":"W82","ground":"Seattle"},{"round":"Round of 16","num":95,"date":"2026-07-07","time":"12:00 UTC-4","team1":"W86","team2":"W88","ground":"Atlanta"},{"round":"Round of 16","num":96,"date":"2026-07-07","time":"13:00 UTC-7","team1":"W85","team2":"W87","ground":"Vancouver"},{"round":"Quarter-final","num":97,"date":"2026-07-09","time":"16:00 UTC-4","team1":"W89","team2":"W90","ground":"Boston (Foxborough)"},{"round":"Quarter-final","num":98,"date":"2026-07-10","time":"12:00 UTC-7","team1":"W93","team2":"W94","ground":"Los Angeles (Inglewood)"},{"round":"Quarter-final","num":99,"date":"2026-07-11","time":"17:00 UTC-4","team1":"W91","team2":"W92","ground":"Miami (Miami Gardens)"},{"round":"Quarter-final","num":100,"date":"2026-07-11","time":"20:00 UTC-5","team1":"W95","team2":"W96","ground":"Kansas City"},{"round":"Semi-final","num":101,"date":"2026-07-14","time":"14:00 UTC-5","team1":"W97","team2":"W98","ground":"Dallas (Arlington)"},{"round":"Semi-final","num":102,"date":"2026-07-15","time":"15:00 UTC-4","team1":"W99","team2":"W100","ground":"Atlanta"},{"round":"Match for third place","num":103,"date":"2026-07-18","time":"17:00 UTC-4","team1":"L101","team2":"L102","ground":"Miami (Miami Gardens)"},{"round":"Final","num":104,"date":"2026-07-19","time":"15:00 UTC-4","team1":"W101","team2":"W102","ground":"New York/New Jersey (East Rutherford)"}]};
-const EMBED_ASOF = 'Jun 13, 2026';
+const EMBEDDED_DATA = {"name":"World Cup 2026","matches":[{"round":"Matchday 1","date":"2026-06-11","time":"13:00 UTC-6","team1":"Mexico","team2":"South Africa","score":{"ft":[2,0],"ht":[1,0]},"goals1":[{"name":"Julián Quiñones","minute":"9"},{"name":"Raúl Jiménez","minute":"67"}],"goals2":[],"group":"Group A","ground":"Mexico City"},{"round":"Matchday 1","date":"2026-06-11","time":"20:00 UTC-6","team1":"South Korea","team2":"Czech Republic","score":{"ft":[2,1],"ht":[0,0]},"goals1":[{"name":"Hwang In-Beom","minute":"67"},{"name":"Oh Hyeon-Gyu","minute":"80"}],"goals2":[{"name":"Ladislav Krejcí","minute":"59"}],"group":"Group A","ground":"Guadalajara (Zapopan)"},{"round":"Matchday 8","date":"2026-06-18","time":"12:00 UTC-4","team1":"Czech Republic","team2":"South Africa","group":"Group A","ground":"Atlanta"},{"round":"Matchday 8","date":"2026-06-18","time":"19:00 UTC-6","team1":"Mexico","team2":"South Korea","group":"Group A","ground":"Guadalajara (Zapopan)"},{"round":"Matchday 14","date":"2026-06-24","time":"19:00 UTC-6","team1":"Czech Republic","team2":"Mexico","group":"Group A","ground":"Mexico City"},{"round":"Matchday 14","date":"2026-06-24","time":"19:00 UTC-6","team1":"South Africa","team2":"South Korea","group":"Group A","ground":"Monterrey (Guadalupe)"},{"round":"Matchday 2","date":"2026-06-12","time":"15:00 UTC-4","team1":"Canada","team2":"Bosnia & Herzegovina","score":{"ft":[1,1],"ht":[0,1]},"goals1":[{"name":"Cyle Larin","minute":"78"}],"goals2":[{"name":"Jovo Lukić","minute":"21"}],"group":"Group B","ground":"Toronto"},{"round":"Matchday 3","date":"2026-06-13","time":"12:00 UTC-7","team1":"Qatar","team2":"Switzerland","score":{"ft":[1,1],"ht":[0,1]},"goals1":[{"name":"Boualem Khoukhi","minute":"90+4"}],"goals2":[{"name":"Breel Embolo","minute":"17","penalty":true}],"group":"Group B","ground":"San Francisco Bay Area (Santa Clara)"},{"round":"Matchday 8","date":"2026-06-18","time":"12:00 UTC-7","team1":"Switzerland","team2":"Bosnia & Herzegovina","group":"Group B","ground":"Los Angeles (Inglewood)"},{"round":"Matchday 8","date":"2026-06-18","time":"15:00 UTC-7","team1":"Canada","team2":"Qatar","group":"Group B","ground":"Vancouver"},{"round":"Matchday 14","date":"2026-06-24","time":"12:00 UTC-7","team1":"Switzerland","team2":"Canada","group":"Group B","ground":"Vancouver"},{"round":"Matchday 14","date":"2026-06-24","time":"12:00 UTC-7","team1":"Bosnia & Herzegovina","team2":"Qatar","group":"Group B","ground":"Seattle"},{"round":"Matchday 3","date":"2026-06-13","time":"18:00 UTC-4","team1":"Brazil","team2":"Morocco","score":{"ft":[1,1],"ht":[1,1]},"goals1":[{"name":"Vinícius Júnior","minute":"32"}],"goals2":[{"name":"Ismael Saibari","minute":"21"}],"group":"Group C","ground":"New York/New Jersey (East Rutherford)"},{"round":"Matchday 3","date":"2026-06-13","time":"21:00 UTC-4","team1":"Haiti","team2":"Scotland","score":{"ft":[0,1],"ht":[0,1]},"goals1":[],"goals2":[{"name":"John McGinn","minute":"28"}],"group":"Group C","ground":"Boston (Foxborough)"},{"round":"Matchday 9","date":"2026-06-19","time":"18:00 UTC-4","team1":"Scotland","team2":"Morocco","group":"Group C","ground":"Boston (Foxborough)"},{"round":"Matchday 9","date":"2026-06-19","time":"20:30 UTC-4","team1":"Brazil","team2":"Haiti","group":"Group C","ground":"Philadelphia"},{"round":"Matchday 14","date":"2026-06-24","time":"18:00 UTC-4","team1":"Scotland","team2":"Brazil","group":"Group C","ground":"Miami (Miami Gardens)"},{"round":"Matchday 14","date":"2026-06-24","time":"18:00 UTC-4","team1":"Morocco","team2":"Haiti","group":"Group C","ground":"Atlanta"},{"round":"Matchday 2","date":"2026-06-12","time":"18:00 UTC-7","team1":"USA","team2":"Paraguay","score":{"ft":[4,1],"ht":[3,0]},"goals1":[{"name":"Damian Bobadilla","minute":"7","owngoal":true},{"name":"Folarin Balogun","minute":"31"},{"name":"Folarin Balogun","minute":"45+5"},{"name":"Giovanni Reyna","minute":"90+8"}],"goals2":[{"name":"Mauricio","minute":"73"}],"group":"Group D","ground":"Los Angeles (Inglewood)"},{"round":"Matchday 3","date":"2026-06-13","time":"21:00 UTC-7","team1":"Australia","team2":"Turkey","group":"Group D","ground":"Vancouver","score":{"ft":[2,0]}},{"round":"Matchday 9","date":"2026-06-19","time":"12:00 UTC-7","team1":"USA","team2":"Australia","group":"Group D","ground":"Seattle"},{"round":"Matchday 9","date":"2026-06-19","time":"20:00 UTC-7","team1":"Turkey","team2":"Paraguay","group":"Group D","ground":"San Francisco Bay Area (Santa Clara)"},{"round":"Matchday 15","date":"2026-06-25","time":"19:00 UTC-7","team1":"Turkey","team2":"USA","group":"Group D","ground":"Los Angeles (Inglewood)"},{"round":"Matchday 15","date":"2026-06-25","time":"19:00 UTC-7","team1":"Paraguay","team2":"Australia","group":"Group D","ground":"San Francisco Bay Area (Santa Clara)"},{"round":"Matchday 4","date":"2026-06-14","time":"12:00 UTC-5","team1":"Germany","team2":"Curaçao","group":"Group E","ground":"Houston"},{"round":"Matchday 4","date":"2026-06-14","time":"19:00 UTC-4","team1":"Ivory Coast","team2":"Ecuador","group":"Group E","ground":"Philadelphia"},{"round":"Matchday 10","date":"2026-06-20","time":"16:00 UTC-4","team1":"Germany","team2":"Ivory Coast","group":"Group E","ground":"Toronto"},{"round":"Matchday 10","date":"2026-06-20","time":"19:00 UTC-5","team1":"Ecuador","team2":"Curaçao","group":"Group E","ground":"Kansas City"},{"round":"Matchday 15","date":"2026-06-25","time":"16:00 UTC-4","team1":"Curaçao","team2":"Ivory Coast","group":"Group E","ground":"Philadelphia"},{"round":"Matchday 15","date":"2026-06-25","time":"16:00 UTC-4","team1":"Ecuador","team2":"Germany","group":"Group E","ground":"New York/New Jersey (East Rutherford)"},{"round":"Matchday 4","date":"2026-06-14","time":"15:00 UTC-5","team1":"Netherlands","team2":"Japan","group":"Group F","ground":"Dallas (Arlington)"},{"round":"Matchday 4","date":"2026-06-14","time":"20:00 UTC-6","team1":"Sweden","team2":"Tunisia","group":"Group F","ground":"Monterrey (Guadalupe)"},{"round":"Matchday 10","date":"2026-06-20","time":"12:00 UTC-5","team1":"Netherlands","team2":"Sweden","group":"Group F","ground":"Houston"},{"round":"Matchday 10","date":"2026-06-20","time":"22:00 UTC-6","team1":"Tunisia","team2":"Japan","group":"Group F","ground":"Monterrey (Guadalupe)"},{"round":"Matchday 15","date":"2026-06-25","time":"18:00 UTC-5","team1":"Japan","team2":"Sweden","group":"Group F","ground":"Dallas (Arlington)"},{"round":"Matchday 15","date":"2026-06-25","time":"18:00 UTC-5","team1":"Tunisia","team2":"Netherlands","group":"Group F","ground":"Kansas City"},{"round":"Matchday 5","date":"2026-06-15","time":"12:00 UTC-7","team1":"Belgium","team2":"Egypt","group":"Group G","ground":"Seattle"},{"round":"Matchday 5","date":"2026-06-15","time":"18:00 UTC-7","team1":"Iran","team2":"New Zealand","group":"Group G","ground":"Los Angeles (Inglewood)"},{"round":"Matchday 11","date":"2026-06-21","time":"12:00 UTC-7","team1":"Belgium","team2":"Iran","group":"Group G","ground":"Los Angeles (Inglewood)"},{"round":"Matchday 11","date":"2026-06-21","time":"18:00 UTC-7","team1":"New Zealand","team2":"Egypt","group":"Group G","ground":"Vancouver"},{"round":"Matchday 16","date":"2026-06-26","time":"20:00 UTC-7","team1":"Egypt","team2":"Iran","group":"Group G","ground":"Seattle"},{"round":"Matchday 16","date":"2026-06-26","time":"20:00 UTC-7","team1":"New Zealand","team2":"Belgium","group":"Group G","ground":"Vancouver"},{"round":"Matchday 5","date":"2026-06-15","time":"12:00 UTC-4","team1":"Spain","team2":"Cape Verde","group":"Group H","ground":"Atlanta"},{"round":"Matchday 5","date":"2026-06-15","time":"18:00 UTC-4","team1":"Saudi Arabia","team2":"Uruguay","group":"Group H","ground":"Miami (Miami Gardens)"},{"round":"Matchday 11","date":"2026-06-21","time":"12:00 UTC-4","team1":"Spain","team2":"Saudi Arabia","group":"Group H","ground":"Atlanta"},{"round":"Matchday 11","date":"2026-06-21","time":"18:00 UTC-4","team1":"Uruguay","team2":"Cape Verde","group":"Group H","ground":"Miami (Miami Gardens)"},{"round":"Matchday 16","date":"2026-06-26","time":"19:00 UTC-5","team1":"Cape Verde","team2":"Saudi Arabia","group":"Group H","ground":"Houston"},{"round":"Matchday 16","date":"2026-06-26","time":"18:00 UTC-6","team1":"Uruguay","team2":"Spain","group":"Group H","ground":"Guadalajara (Zapopan)"},{"round":"Matchday 6","date":"2026-06-16","time":"15:00 UTC-4","team1":"France","team2":"Senegal","group":"Group I","ground":"New York/New Jersey (East Rutherford)"},{"round":"Matchday 6","date":"2026-06-16","time":"18:00 UTC-4","team1":"Iraq","team2":"Norway","group":"Group I","ground":"Boston (Foxborough)"},{"round":"Matchday 12","date":"2026-06-22","time":"17:00 UTC-4","team1":"France","team2":"Iraq","group":"Group I","ground":"Philadelphia"},{"round":"Matchday 12","date":"2026-06-22","time":"20:00 UTC-4","team1":"Norway","team2":"Senegal","group":"Group I","ground":"New York/New Jersey (East Rutherford)"},{"round":"Matchday 16","date":"2026-06-26","time":"15:00 UTC-4","team1":"Norway","team2":"France","group":"Group I","ground":"Boston (Foxborough)"},{"round":"Matchday 16","date":"2026-06-26","time":"15:00 UTC-4","team1":"Senegal","team2":"Iraq","group":"Group I","ground":"Toronto"},{"round":"Matchday 6","date":"2026-06-16","time":"20:00 UTC-5","team1":"Argentina","team2":"Algeria","group":"Group J","ground":"Kansas City"},{"round":"Matchday 6","date":"2026-06-16","time":"21:00 UTC-7","team1":"Austria","team2":"Jordan","group":"Group J","ground":"San Francisco Bay Area (Santa Clara)"},{"round":"Matchday 12","date":"2026-06-22","time":"12:00 UTC-5","team1":"Argentina","team2":"Austria","group":"Group J","ground":"Dallas (Arlington)"},{"round":"Matchday 12","date":"2026-06-22","time":"20:00 UTC-7","team1":"Jordan","team2":"Algeria","group":"Group J","ground":"San Francisco Bay Area (Santa Clara)"},{"round":"Matchday 17","date":"2026-06-27","time":"21:00 UTC-5","team1":"Algeria","team2":"Austria","group":"Group J","ground":"Kansas City"},{"round":"Matchday 17","date":"2026-06-27","time":"21:00 UTC-5","team1":"Jordan","team2":"Argentina","group":"Group J","ground":"Dallas (Arlington)"},{"round":"Matchday 7","date":"2026-06-17","time":"12:00 UTC-5","team1":"Portugal","team2":"DR Congo","group":"Group K","ground":"Houston"},{"round":"Matchday 7","date":"2026-06-17","time":"20:00 UTC-6","team1":"Uzbekistan","team2":"Colombia","group":"Group K","ground":"Mexico City"},{"round":"Matchday 13","date":"2026-06-23","time":"12:00 UTC-5","team1":"Portugal","team2":"Uzbekistan","group":"Group K","ground":"Houston"},{"round":"Matchday 13","date":"2026-06-23","time":"20:00 UTC-6","team1":"Colombia","team2":"DR Congo","group":"Group K","ground":"Guadalajara (Zapopan)"},{"round":"Matchday 17","date":"2026-06-27","time":"19:30 UTC-4","team1":"Colombia","team2":"Portugal","group":"Group K","ground":"Miami (Miami Gardens)"},{"round":"Matchday 17","date":"2026-06-27","time":"19:30 UTC-4","team1":"DR Congo","team2":"Uzbekistan","group":"Group K","ground":"Atlanta"},{"round":"Matchday 7","date":"2026-06-17","time":"15:00 UTC-5","team1":"England","team2":"Croatia","group":"Group L","ground":"Dallas (Arlington)"},{"round":"Matchday 7","date":"2026-06-17","time":"19:00 UTC-4","team1":"Ghana","team2":"Panama","group":"Group L","ground":"Toronto"},{"round":"Matchday 13","date":"2026-06-23","time":"16:00 UTC-4","team1":"England","team2":"Ghana","group":"Group L","ground":"Boston (Foxborough)"},{"round":"Matchday 13","date":"2026-06-23","time":"19:00 UTC-4","team1":"Panama","team2":"Croatia","group":"Group L","ground":"Toronto"},{"round":"Matchday 17","date":"2026-06-27","time":"17:00 UTC-4","team1":"Panama","team2":"England","group":"Group L","ground":"New York/New Jersey (East Rutherford)"},{"round":"Matchday 17","date":"2026-06-27","time":"17:00 UTC-4","team1":"Croatia","team2":"Ghana","group":"Group L","ground":"Philadelphia"},{"round":"Round of 32","num":73,"date":"2026-06-28","time":"12:00 UTC-7","team1":"2A","team2":"2B","ground":"Los Angeles (Inglewood)"},{"round":"Round of 32","num":74,"date":"2026-06-29","time":"16:30 UTC-4","team1":"1E","team2":"3A/B/C/D/F","ground":"Boston (Foxborough)"},{"round":"Round of 32","num":75,"date":"2026-06-29","time":"19:00 UTC-6","team1":"1F","team2":"2C","ground":"Monterrey (Guadalupe)"},{"round":"Round of 32","num":76,"date":"2026-06-29","time":"12:00 UTC-5","team1":"1C","team2":"2F","ground":"Houston"},{"round":"Round of 32","num":77,"date":"2026-06-30","time":"17:00 UTC-4","team1":"1I","team2":"3C/D/F/G/H","ground":"New York/New Jersey (East Rutherford)"},{"round":"Round of 32","num":78,"date":"2026-06-30","time":"12:00 UTC-5","team1":"2E","team2":"2I","ground":"Dallas (Arlington)"},{"round":"Round of 32","num":79,"date":"2026-06-30","time":"19:00 UTC-6","team1":"1A","team2":"3C/E/F/H/I","ground":"Mexico City"},{"round":"Round of 32","num":80,"date":"2026-07-01","time":"12:00 UTC-4","team1":"1L","team2":"3E/H/I/J/K","ground":"Atlanta"},{"round":"Round of 32","num":81,"date":"2026-07-01","time":"17:00 UTC-7","team1":"1D","team2":"3B/E/F/I/J","ground":"San Francisco Bay Area (Santa Clara)"},{"round":"Round of 32","num":82,"date":"2026-07-01","time":"13:00 UTC-7","team1":"1G","team2":"3A/E/H/I/J","ground":"Seattle"},{"round":"Round of 32","num":83,"date":"2026-07-02","time":"19:00 UTC-4","team1":"2K","team2":"2L","ground":"Toronto"},{"round":"Round of 32","num":84,"date":"2026-07-02","time":"12:00 UTC-7","team1":"1H","team2":"2J","ground":"Los Angeles (Inglewood)"},{"round":"Round of 32","num":85,"date":"2026-07-02","time":"20:00 UTC-7","team1":"1B","team2":"3E/F/G/I/J","ground":"Vancouver"},{"round":"Round of 32","num":86,"date":"2026-07-03","time":"18:00 UTC-4","team1":"1J","team2":"2H","ground":"Miami (Miami Gardens)"},{"round":"Round of 32","num":87,"date":"2026-07-03","time":"20:30 UTC-5","team1":"1K","team2":"3D/E/I/J/L","ground":"Kansas City"},{"round":"Round of 32","num":88,"date":"2026-07-03","time":"13:00 UTC-5","team1":"2D","team2":"2G","ground":"Dallas (Arlington)"},{"round":"Round of 16","num":89,"date":"2026-07-04","time":"17:00 UTC-4","team1":"W74","team2":"W77","ground":"Philadelphia"},{"round":"Round of 16","num":90,"date":"2026-07-04","time":"12:00 UTC-5","team1":"W73","team2":"W75","ground":"Houston"},{"round":"Round of 16","num":91,"date":"2026-07-05","time":"16:00 UTC-4","team1":"W76","team2":"W78","ground":"New York/New Jersey (East Rutherford)"},{"round":"Round of 16","num":92,"date":"2026-07-05","time":"18:00 UTC-6","team1":"W79","team2":"W80","ground":"Mexico City"},{"round":"Round of 16","num":93,"date":"2026-07-06","time":"14:00 UTC-5","team1":"W83","team2":"W84","ground":"Dallas (Arlington)"},{"round":"Round of 16","num":94,"date":"2026-07-06","time":"17:00 UTC-7","team1":"W81","team2":"W82","ground":"Seattle"},{"round":"Round of 16","num":95,"date":"2026-07-07","time":"12:00 UTC-4","team1":"W86","team2":"W88","ground":"Atlanta"},{"round":"Round of 16","num":96,"date":"2026-07-07","time":"13:00 UTC-7","team1":"W85","team2":"W87","ground":"Vancouver"},{"round":"Quarter-final","num":97,"date":"2026-07-09","time":"16:00 UTC-4","team1":"W89","team2":"W90","ground":"Boston (Foxborough)"},{"round":"Quarter-final","num":98,"date":"2026-07-10","time":"12:00 UTC-7","team1":"W93","team2":"W94","ground":"Los Angeles (Inglewood)"},{"round":"Quarter-final","num":99,"date":"2026-07-11","time":"17:00 UTC-4","team1":"W91","team2":"W92","ground":"Miami (Miami Gardens)"},{"round":"Quarter-final","num":100,"date":"2026-07-11","time":"20:00 UTC-5","team1":"W95","team2":"W96","ground":"Kansas City"},{"round":"Semi-final","num":101,"date":"2026-07-14","time":"14:00 UTC-5","team1":"W97","team2":"W98","ground":"Dallas (Arlington)"},{"round":"Semi-final","num":102,"date":"2026-07-15","time":"15:00 UTC-4","team1":"W99","team2":"W100","ground":"Atlanta"},{"round":"Match for third place","num":103,"date":"2026-07-18","time":"17:00 UTC-4","team1":"L101","team2":"L102","ground":"Miami (Miami Gardens)"},{"round":"Final","num":104,"date":"2026-07-19","time":"15:00 UTC-4","team1":"W101","team2":"W102","ground":"New York/New Jersey (East Rutherford)"}]};
+const EMBED_ASOF = 'Jun 14, 2026';
 
 // Pre-tournament consensus model (our 5-source blend, implied championship %).
 // The Live Odds view compares the live market against this baseline.
@@ -774,9 +824,12 @@ function renderR32(matches){
       el.onclick=()=>{
         const num=el.dataset.pnum, code=el.dataset.pcode;
         const key = num==='bronze'?'bronze':+num;
+        const hadChamp = !!(M[104]&&M[104].winner);
         if(userPicks[key]===code) delete userPicks[key]; else userPicks[key]=code;
         save('wc26_userpicks',userPicks);
+        const pickedFinal = (key===104 && userPicks[104]);
         renderR32(applyOverrides(RAW));
+        if(pickedFinal && !hadChamp) confetti();
       };
     });
   }
@@ -852,6 +905,114 @@ function renderMarket(){
     ${elimChips}`;
 }
 
+// ===== MONTE CARLO FORECAST =====
+function simStrength(code){
+  if(POLY && POLY.live){ const p=POLY.live.find(x=>x.code===code); if(p) return Math.max(p.norm*1000,0.4); }
+  return MODEL_STRENGTH[code]!=null ? Math.max(MODEL_STRENGTH[code],0.4) : 0.4;
+}
+function simGroupMatch(a,b){
+  const sa=simStrength(a), sb=simStrength(b), pa=sa/(sa+sb);
+  const close=1-Math.abs(pa-0.5)*2, pDraw=0.20+0.12*close, r=Math.random();
+  if(r<pDraw){ const g=(Math.random()*3)|0; return [g,g]; }
+  const aWins=r<pDraw+(1-pDraw)*pa;
+  const margin=1+(Math.random()<0.35?1:0)+(Math.random()<0.12?1:0);
+  const lo=(Math.random()*2)|0, w=lo+margin;
+  return aWins?[w,lo]:[lo,w];
+}
+function simKO(a,b){ if(!a)return b; if(!b)return a; const sa=simStrength(a),sb=simStrength(b); return Math.random()<sa/(sa+sb)?a:b; }
+function oneSim(base){
+  const sim=base.map(m=>{
+    if(m.group&&m.t1&&m.t2&&!m.played){ const [s1,s2]=simGroupMatch(m.t1,m.t2); return {...m,s1,s2,played:true}; }
+    return m;
+  });
+  const tb=computeStandings(sim);
+  const W={},R={}; for(const g in tb){ if(tb[g].rows[0])W[g]=tb[g].rows[0].code; if(tb[g].rows[1])R[g]=tb[g].rows[1].code; }
+  const thirds=bestThirds(tb).slice(0,8), tg=thirds.map(t=>t.g), tbg={}; thirds.forEach(t=>tbg[t.g]=t.code);
+  const assign=assignThirds(tg);
+  const slot=(s,num)=> s[0]==='1'?W[s[1]] : s[0]==='2'?R[s[1]] : (assign[num]?tbg[assign[num]]:null);
+  const win={}, ko=[];
+  for(let num=73;num<=88;num++){ const [sa,sb]=R32_DEF[num]; const a=slot(sa,num),b=slot(sb,num); if(a)ko.push(a); if(b)ko.push(b); win[num]=simKO(a,b); }
+  for(const num of [89,90,91,92,93,94,95,96,97,98,99,100,101,102]){ const [sa,sb]=KO_FLOW[num]; win[num]=simKO(win[+sa.slice(1)],win[+sb.slice(1)]); }
+  const finalists=[win[101],win[102]];
+  win[104]=simKO(win[101],win[102]);
+  return { champion:win[104], finalists, semis:[win[97],win[98],win[99],win[100]], ko };
+}
+
+let FC={win:{},fin:{},sf:{},ko:{},N:0,running:false};
+function runForecast(){
+  if(FC.running) return;
+  const N=+(prefs.fcN||10000);
+  const base=applyOverrides(RAW);
+  FC={win:{},fin:{},sf:{},ko:{},N:0,running:true};
+  const prog=document.getElementById('fc-prog'), bar=document.getElementById('fc-prog-bar');
+  const runBtn=document.getElementById('fc-run');
+  prog.classList.add('on'); runBtn.disabled=true; runBtn.innerHTML='<span class="spin">⚙</span> Simulating…';
+  const bump=(o,k)=>{ if(k)o[k]=(o[k]||0)+1; };
+  const chunk=Math.max(500, Math.round(N/40));
+  function step(){
+    const end=Math.min(FC.N+chunk, N);
+    for(;FC.N<end;FC.N++){
+      const r=oneSim(base);
+      bump(FC.win,r.champion);
+      r.finalists.forEach(c=>bump(FC.fin,c));
+      r.semis.forEach(c=>bump(FC.sf,c));
+      new Set(r.ko).forEach(c=>bump(FC.ko,c));
+    }
+    bar.style.width=(100*FC.N/N).toFixed(1)+'%';
+    renderForecast(FC.N>=N);
+    if(FC.N<N){ requestAnimationFrame(step); }
+    else { FC.running=false; runBtn.disabled=false; runBtn.innerHTML='⚡ Run again'; setTimeout(()=>prog.classList.remove('on'),600); }
+  }
+  requestAnimationFrame(step);
+}
+function renderForecast(done){
+  const N=FC.N||1; const me='USA';
+  const ranked=Object.keys(TEAMS)
+    .map(c=>({c, win:(FC.win[c]||0)/N, fin:(FC.fin[c]||0)/N, sf:(FC.sf[c]||0)/N, ko:(FC.ko[c]||0)/N}))
+    .filter(x=>x.ko>0).sort((a,b)=> b.win-a.win || b.fin-a.fin || b.sf-a.sf);
+  const maxWin=Math.max(0.01,...ranked.map(x=>x.win));
+  const top=ranked.slice(0,24);
+  const hd=document.getElementById('fc-headline'); hd.classList.remove('hide');
+  const fav=ranked[0]; const contenders=ranked.filter(x=>x.win>=0.05).length;
+  const meRow=ranked.find(x=>x.c===me); const meRank=ranked.findIndex(x=>x.c===me)+1;
+  hd.innerHTML=`
+    <div class="fc-hcard spot"><div class="k">Most likely champion</div><div class="v">${fav?`<span class="flag">${TEAMS[fav.c][1]}</span>${TEAMS[fav.c][0]} <span class="pct">${(fav.win*100).toFixed(1)}%</span>`:'—'}</div></div>
+    <div class="fc-hcard"><div class="k">Genuine contenders</div><div class="v">${contenders} <span style="font-size:14px;color:var(--muted);font-family:'Outfit'">teams &gt;5%</span></div></div>
+    ${meRow?`<div class="fc-hcard"><div class="k">🇺🇸 USA title odds</div><div class="v"><span class="pct" style="color:var(--dallas)">${(meRow.win*100).toFixed(1)}%</span> <span style="font-size:13px;color:var(--muted);font-family:'Outfit'">#${meRank} of ${ranked.length}</span></div></div>`:''}`;
+  const rows=top.map((x,i)=>{
+    const w=(x.win/maxWin*100), finW=(x.fin/maxWin*100);
+    return `<div class="fcrow ${x.c===me?'me':''}">
+      <div class="rk">${i===0?'👑':(i+1)}</div>
+      <div class="tm"><span class="flag">${TEAMS[x.c][1]}</span>${TEAMS[x.c][0]}</div>
+      <div class="fcbar"><div class="seg2" style="left:0;width:${finW.toFixed(1)}%"></div><div class="fill" style="width:${w.toFixed(1)}%"></div><span class="lab">${(x.win*100).toFixed(1)}%</span></div>
+      <div class="fccols"><b>${(x.win*100).toFixed(1)}</b> · ${(x.fin*100).toFixed(0)} · ${(x.sf*100).toFixed(0)}</div>
+    </div>`;
+  }).join('');
+  const method = done?`<div style="margin-top:14px;font-size:11px;color:var(--faint);line-height:1.6">Each run completes the group stage and the full knockout bracket using the real FIFA tiebreakers, with every remaining match decided by a Bradley–Terry coin-flip weighted by ${POLY&&POLY.live?'<b style="color:var(--muted)">live market odds</b>':'the consensus model'}. Played results are locked. It's a forecast, not a prophecy — one hot streak rewrites it.</div>`:'';
+  document.getElementById('forecast').innerHTML=
+    `<div class="fc-legend"><span class="sweep">Title%</span><span class="sweep2">Reach final%</span><span style="color:var(--faint)">cols: title · final · semi</span></div>`+rows+method;
+  const meta=document.getElementById('fc-meta');
+  if(meta) meta.textContent = done? `${N.toLocaleString()} simulations · settled` : `simulating… ${N.toLocaleString()} runs`;
+}
+
+// ===== CONFETTI =====
+function confetti(){
+  if(document.getElementById('confetti')) return;
+  const c=document.createElement('canvas'); c.id='confetti';
+  c.width=innerWidth; c.height=innerHeight; document.body.appendChild(c);
+  const ctx=c.getContext('2d'), cols=['#d4af37','#3fb950','#ff9e1b','#ecebe6','#f0d875'];
+  const P=Array.from({length:140},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.3,
+    vx:(Math.random()-.5)*3,vy:2+Math.random()*4,s:4+Math.random()*6,
+    col:cols[(Math.random()*cols.length)|0],rot:Math.random()*6,vr:(Math.random()-.5)*.3}));
+  let t=0;
+  (function f(){ t++; ctx.clearRect(0,0,c.width,c.height);
+    P.forEach(p=>{ p.x+=p.vx;p.y+=p.vy;p.vy+=.04;p.rot+=p.vr;
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.fillStyle=p.col;
+      ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);ctx.restore(); });
+    if(t<160)requestAnimationFrame(f); else c.remove();
+  })();
+}
+
 function renderFooter(){
   const src=SOURCES[prefs.src||'openfootball'];
   document.getElementById('foot').innerHTML=
@@ -898,6 +1059,7 @@ function showView(v){
   document.getElementById('view-fixtures').classList.toggle('hide',v!=='fixtures');
   document.getElementById('view-r32').classList.toggle('hide',v!=='r32');
   document.getElementById('view-market').classList.toggle('hide',v!=='market');
+  document.getElementById('view-forecast').classList.toggle('hide',v!=='forecast');
 }
 document.querySelectorAll('#view-seg button').forEach(b=>b.onclick=()=>showView(b.dataset.v));
 document.getElementById('refresh').onclick=sync;
@@ -922,6 +1084,11 @@ document.getElementById('bracket-seg').querySelectorAll('button').forEach(b=>b.o
 document.getElementById('clear-picks').onclick=()=>{
   userPicks={}; save('wc26_userpicks',userPicks); renderR32(applyOverrides(RAW));
 };
+document.getElementById('fc-run').onclick=runForecast;
+document.getElementById('fc-n').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  prefs.fcN=+b.dataset.n; save('wc26_prefs',prefs);
+  document.querySelectorAll('#fc-n button').forEach(x=>x.classList.toggle('on',+x.dataset.n===prefs.fcN));
+});
 
 function showBanner(type,msg){ const b=document.getElementById('banner'); b.className='banner '+type; b.textContent=msg; }
 function hideBanner(){ document.getElementById('banner').className='banner'; }
@@ -941,6 +1108,8 @@ setInterval(updateSyncedLabel,30000);
   if(prefs.projectR32 && !prefs.bracketMode) prefs.bracketMode='project'; // migrate old toggle
   const bm=prefs.bracketMode||'decide';
   document.querySelectorAll('#bracket-seg button').forEach(x=>x.classList.toggle('on',x.dataset.m===bm));
+  const fn=prefs.fcN||10000;
+  document.querySelectorAll('#fc-n button').forEach(x=>x.classList.toggle('on',+x.dataset.n===fn));
   showView(prefs.view||'groups');
   // Render immediately from the best data we have, so the app is never blank:
   // cached sync > built-in snapshot. Live sync then layers on top.
