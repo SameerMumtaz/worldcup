@@ -133,6 +133,22 @@
   .r32 .m{font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--faint); letter-spacing:.06em; display:flex; justify-content:space-between; margin-bottom:5px}
   .r32 .slot{display:flex; align-items:center; gap:7px; padding:3px 0; font-size:13.5px; font-weight:600}
   .r32 .slot.tbd{color:var(--faint); font-style:italic; font-weight:400; font-family:'JetBrains Mono',monospace; font-size:12px}
+  .r32 .slot.is-prov{color:var(--dallas)}
+  .r32 .slot .prov{font-size:8px; font-family:'JetBrains Mono',monospace; letter-spacing:.04em; text-transform:uppercase; color:var(--dallas); background:var(--dallas-dim); padding:1px 5px; border-radius:4px; margin-left:6px}
+  .r32 .slot.win{color:var(--gold); font-weight:700}
+  .r32 .slot.lose{opacity:.45}
+  .r32 .slot .wmark{color:var(--win); margin-right:1px; font-size:11px}
+  .r32 .slot.pickable{cursor:pointer; border-radius:7px; margin:0 -6px; padding:3px 6px; transition:background .12s}
+  .r32 .slot.pickable:hover{background:rgba(212,175,55,.10)}
+  .r32 .slot.pickable:active{background:rgba(212,175,55,.18)}
+  .ko-round{margin-bottom:22px}
+  .ko-round-label{font-family:'Bebas Neue',sans-serif; font-weight:400; font-size:19px; letter-spacing:.07em; color:var(--gold); margin:0 0 10px; padding-bottom:5px; border-bottom:1px solid var(--line2); display:flex; justify-content:space-between; align-items:baseline}
+  .ko-round-label .ct{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--faint); letter-spacing:.04em; text-transform:uppercase}
+  .champion{margin-top:6px; background:linear-gradient(135deg,rgba(212,175,55,.20),rgba(212,175,55,.03)); border:1px solid var(--gold-dim); border-radius:16px; padding:22px 18px; text-align:center; position:relative; overflow:hidden}
+  .champion .lbl{font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.32em; text-transform:uppercase; color:var(--gold)}
+  .champion .team{font-family:'Bebas Neue',sans-serif; font-size:38px; letter-spacing:.02em; margin-top:6px; display:flex; align-items:center; justify-content:center; gap:13px; line-height:1}
+  .champion .team .flag{font-size:32px}
+  .champion .note{font-size:11px; color:var(--muted); margin-top:8px}
   .r32 .slot .code{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); margin-left:auto}
 
   /* ===== MODAL ===== */
@@ -186,7 +202,7 @@
     <div class="seg" id="view-seg">
       <button data-v="groups" class="on">Group Tables</button>
       <button data-v="fixtures">Fixtures</button>
-      <button data-v="r32">Round of 32</button>
+      <button data-v="r32">Bracket</button>
       <button data-v="market">Live Odds</button>
     </div>
     <label class="toggle" id="auto-wrap"><span class="switch" id="auto-sw"><span class="k"></span></span> Auto-sync</label>
@@ -210,9 +226,18 @@
     <div class="fixtures" id="fixtures"></div>
   </section>
 
-  <!-- R32 -->
+  <!-- R32 / BRACKET -->
   <section id="view-r32" class="hide">
-    <div class="sec-head"><h2>Round of 32</h2><span class="meta">fills automatically as groups decide</span></div>
+    <div class="sec-head"><h2>Bracket</h2><span class="meta" id="r32-meta">fills automatically as groups decide</span></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+      <div class="seg" id="bracket-seg">
+        <button data-m="decide" class="on">As groups decide</button>
+        <button data-m="project">Project · odds</button>
+        <button data-m="pick">Pick your own</button>
+      </div>
+      <span id="pick-progress" class="hide" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)"></span>
+      <button class="btn hide" id="clear-picks" style="margin-left:auto">Clear picks</button>
+    </div>
     <div class="r32grid" id="r32"></div>
   </section>
 
@@ -435,6 +460,7 @@ function assignThirds(qualifiedGroups){
 // ---- STATE ----
 let RAW=[];            // normalized matches
 let POLY=load('wc26_poly',null);  // polymarket live odds
+let userPicks=load('wc26_userpicks',{}); // user's manual bracket: matchNum -> winner code
 let TABLES={};         // standings
 let overrides=load('wc26_overrides',{});   // matchKey -> [s1,s2]
 let prefs=load('wc26_prefs',{auto:false,pred:true,view:'groups',md:'all'});
@@ -570,8 +596,10 @@ function fmtWhen(m){
   return `${ds} · ${m.time||''}`;
 }
 function renderFixtures(matches){
-  // matchday filter chips
-  const rounds=[...new Set(matches.map(m=>m.round))];
+  // matchday filter chips — sorted in true tournament order
+  const KO_ORDER={'Round of 32':100,'Round of 16':101,'Quarter-final':102,'Semi-final':103,'Match for third place':104,'Final':105};
+  const roundRank=r=>{ const md=/^Matchday (\d+)$/.exec(r); return md?+md[1]:(KO_ORDER[r]??999); };
+  const rounds=[...new Set(matches.map(m=>m.round))].sort((a,b)=>roundRank(a)-roundRank(b));
   const mdwrap=document.getElementById('md-filter');
   const chips=['all',...rounds];
   mdwrap.innerHTML=chips.map(r=>`<button class="btn ${prefs.md===r?'primary':''}" data-md="${r}">${r==='all'?'All':r}</button>`).join('');
@@ -604,45 +632,170 @@ function renderFixtures(matches){
   document.querySelectorAll('.fx').forEach(fx=>fx.onclick=()=>openModal(fx.dataset.key));
 }
 
+// Knockout flow: match num -> [sourceA, sourceB]. 'W74' = winner of match 74.
+const KO_FLOW = {
+  89:['W74','W77'], 90:['W73','W75'], 91:['W76','W78'], 92:['W79','W80'],
+  93:['W83','W84'], 94:['W81','W82'], 95:['W86','W88'], 96:['W85','W87'],
+  97:['W89','W90'], 98:['W93','W94'], 99:['W91','W92'], 100:['W95','W96'],
+  101:['W97','W98'], 102:['W99','W100'],
+  104:['W101','W102'],            // Final
+};
+const KO_ROUNDS = [
+  {label:'Round of 32', nums:[73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88]},
+  {label:'Round of 16', nums:[89,90,91,92,93,94,95,96]},
+  {label:'Quarter-finals', nums:[97,98,99,100]},
+  {label:'Semi-finals', nums:[101,102]},
+  {label:'Final', nums:[104], extra:'bronze'},
+];
+
+// Strength for knockout picks: live Polymarket prob first, else consensus model.
+function koStrength(code){
+  if(!code) return -1;
+  if(POLY && POLY.live){ const p=POLY.live.find(x=>x.code===code); if(p) return p.norm*1000; }
+  if(MODEL_STRENGTH[code]!=null) return MODEL_STRENGTH[code];
+  return 0.01;
+}
+function pickWinner(a,b){
+  if(!a||!b) return null;
+  const sa=koStrength(a), sb=koStrength(b);
+  if(sa!==sb) return sa>sb?a:b;
+  return rankOf(a)<=rankOf(b)?a:b;  // deterministic tiebreak
+}
+
 function renderR32(matches){
-  // resolve winners/runners/thirds
+  const mode = prefs.bracketMode || 'decide';
+  const seed = (mode !== 'decide');   // fill R32 from current standings when projecting or picking
+  // ---- group-stage resolution ----
   const W={},R={};
   for(const g in TABLES){ const r=TABLES[g].rows; if(r[0])W[g]=r[0].code; if(r[1])R[g]=r[1].code; }
   const completeGroups=Object.keys(TABLES).filter(g=>TABLES[g].complete);
-  const thirds=bestThirds(TABLES);
-  // lock thirds only when ALL groups complete (3rd-place table needs every group done)
   const allDone=completeGroups.length===12;
-  const top8=thirds.slice(0,8);
-  const top8groups=top8.map(t=>t.g);
-  let thirdAssign={};
-  if(allDone){ thirdAssign=assignThirds(top8groups); }
+  const thirds=bestThirds(TABLES);
+  const top8groups=thirds.slice(0,8).map(t=>t.g);
   const thirdByGroup={}; thirds.forEach(t=>thirdByGroup[t.g]=t.code);
+  let thirdAssign={};
+  if(allDone || seed) thirdAssign=assignThirds(top8groups);
 
-  // find knockout results from feed (W73 etc.)
-  const knockWinner={};
-  matches.forEach(m=>{ if(m.num&&m.played){ knockWinner[m.num]= m.s1>m.s2?m.t1:(m.s2>m.s1?m.t2:m.t1); }});
+  const realWin={}, realScore={};
+  matches.forEach(m=>{ if(m.num&&m.num>=73&&m.played){ realWin[m.num]= m.s1>m.s2?m.t1:(m.s2>m.s1?m.t2:m.t1); realScore[m.num]=[m.s1,m.s2]; }});
 
-  function resolveSlot(s, num){
-    if(s[0]==='1'){ const g=s[1]; return TABLES[g]&&TABLES[g].complete?W[g]:null; }
-    if(s[0]==='2'){ const g=s[1]; return TABLES[g]&&TABLES[g].complete?R[g]:null; }
-    if(s[0]==='3'){ if(!allDone) return null; const g=thirdAssign[num]; return g?thirdByGroup[g]:null; }
-    return null;
-  }
-  const html=Object.keys(R32_DEF).map(num=>{
-    num=+num;
-    const [a,b]=R32_DEF[num];
-    const ca=resolveSlot(a,num), cb=resolveSlot(b,num);
-    const dallas=DALLAS.has(num);
-    function slotHtml(code, raw){
-      if(code&&TEAMS[code]) return `<div class="slot"><span class="flag">${TEAMS[code][1]}</span>${TEAMS[code][0]}<span class="code">${raw}</span></div>`;
-      return `<div class="slot tbd">${raw}<span class="code"></span></div>`;
+  function resolveGroupSlot(s, num){
+    if(s[0]==='1'||s[0]==='2'){
+      const g=s[1]; if(!TABLES[g]) return {code:null};
+      const locked=TABLES[g].complete;
+      if(!locked && !seed) return {code:null};
+      return { code: s[0]==='1'?W[g]:R[g], provisional:!locked };
     }
+    if(s[0]==='3'){
+      if(!allDone && !seed) return {code:null};
+      const g=thirdAssign[num]; if(!g) return {code:null};
+      return { code: thirdByGroup[g], provisional:!allDone };
+    }
+    return {code:null};
+  }
+
+  // decide each match's winner per mode
+  function decideWinner(num, a, b){
+    if(realWin[num]) return {w:realWin[num], real:true};
+    if(mode==='pick'){ const p=userPicks[num]; return (p===a||p===b)?{w:p, pick:true}:{w:null}; }
+    if(mode==='project' && a && b) return {w:pickWinner(a,b), provisional:true};
+    return {w:null};
+  }
+
+  const M={};
+  // R32
+  for(let num=73; num<=88; num++){
+    const [sa,sb]=R32_DEF[num];
+    const ra=resolveGroupSlot(sa,num), rb=resolveGroupSlot(sb,num);
+    const a=ra.code,b=rb.code; const d=decideWinner(num,a,b);
+    M[num]={a,b,aProv:ra.provisional,bProv:rb.provisional,winner:d.w,loser:d.w?(d.w===a?b:a):null,real:d.real,provisional:d.provisional,pick:d.pick,score:realScore[num],slotA:sa,slotB:sb};
+  }
+  // R16 → Final
+  for(const num of [89,90,91,92,93,94,95,96,97,98,99,100,101,102,104]){
+    const [sa,sb]=KO_FLOW[num];
+    const a=M[+sa.slice(1)]?.winner||null, b=M[+sb.slice(1)]?.winner||null;
+    const d=decideWinner(num,a,b);
+    M[num]={a,b,winner:d.w,loser:d.w?(d.w===a?b:a):null,real:d.real,provisional:d.provisional,pick:d.pick,score:realScore[num],slotA:sa,slotB:sb};
+  }
+  // Bronze
+  const bl1=M[101]?.loser||null, bl2=M[102]?.loser||null;
+  let bw=null,bpick=false,bprov=false;
+  if(bl1&&bl2){
+    if(mode==='pick'){ const p=userPicks['bronze']; if(p===bl1||p===bl2){ bw=p; bpick=true; } }
+    else if(mode==='project'){ bw=pickWinner(bl1,bl2); bprov=true; }
+  }
+  M['bronze']={a:bl1,b:bl2,winner:bw,loser:bw?(bw===bl1?bl2:bl1):null,provisional:bprov,pick:bpick,slotA:'L101',slotB:'L102'};
+  const champion=M[104]?.winner||null;
+  const champProv=M[104]?.provisional, champPick=M[104]?.pick;
+
+  // ---- render ----
+  function slotHtml(num, code, prov, raw, isWin, isLose, clickable){
+    if(code&&TEAMS[code]){
+      const cls=(isWin?'win ':'')+(isLose?'lose ':'')+(prov&&!isWin?'is-prov ':'')+(clickable?'pickable':'');
+      const mark=isWin?'<span class="wmark">▸</span>':'';
+      const ptag=prov?'<span class="prov">proj</span>':'';
+      const attrs=clickable?`data-pnum="${num}" data-pcode="${code}"`:'';
+      return `<div class="slot ${cls}" ${attrs}>${mark}<span class="flag">${TEAMS[code][1]}</span>${TEAMS[code][0]}${ptag}<span class="code">${raw}</span></div>`;
+    }
+    return `<div class="slot tbd">${raw}<span class="code"></span></div>`;
+  }
+  function cardHtml(num, label){
+    const m=M[num]; const dallas=DALLAS.has(num);
+    const aWin=m.winner&&m.winner===m.a, bWin=m.winner&&m.winner===m.b;
+    const clickable = mode==='pick' && !m.real;
+    const sc = m.score?`<span style="color:var(--faint);font-size:10px;margin-left:auto">${m.score[0]}–${m.score[1]}</span>`:'';
+    const tag = m.real?' · FT':(m.pick?' · your pick':'');
     return `<div class="r32 ${dallas?'dallas':''}">
-      <div class="m"><span>Match ${num}</span>${dallas?'<span style="color:var(--dallas)">◆ Arlington</span>':'<span></span>'}</div>
-      ${slotHtml(ca,a)}${slotHtml(cb,b)}
+      <div class="m"><span>${label||('Match '+num)}${tag}</span>${dallas?'<span style="color:var(--dallas)">◆ Arlington</span>':sc||'<span></span>'}</div>
+      ${slotHtml(num,m.a,m.aProv,m.slotA,aWin,m.winner&&!aWin,clickable&&m.a)}
+      ${slotHtml(num,m.b,m.bProv,m.slotB,bWin,m.winner&&!bWin,clickable&&m.b)}
     </div>`;
-  }).join('');
+  }
+
+  let html='';
+  const rounds = (mode==='decide') ? KO_ROUNDS.slice(0,1) : KO_ROUNDS;
+  for(const rd of rounds){
+    const cards=rd.nums.map(n=>cardHtml(n, rd.label==='Final'?'Final':null)).join('');
+    let extra=''; if(rd.extra==='bronze') extra=cardHtml('bronze','3rd-place');
+    const hint = rd.label==='Round of 32' ? (mode==='pick'?'tap a team to advance it':(mode==='project'?'projected':'fills as groups decide')) : '';
+    html+=`<div class="ko-round"><div class="ko-round-label">${rd.label}<span class="ct">${hint}</span></div><div class="r32grid">${cards}${extra}</div></div>`;
+  }
+  if(champion && TEAMS[champion] && mode!=='decide'){
+    const note = champPick?'Your pick to lift the trophy.' : (champProv?'Based on current standings + live market odds.':'Decided.');
+    html+=`<div class="champion"><div class="lbl">${mode==='pick'?'Your Champion':'Projected Champion'}</div>
+      <div class="team"><span class="flag">${TEAMS[champion][1]}</span>${TEAMS[champion][0]}</div>
+      <div class="note">${note}</div></div>`;
+  }
   document.getElementById('r32').innerHTML=html;
+
+  // pick-mode interactions
+  if(mode==='pick'){
+    document.querySelectorAll('.slot.pickable').forEach(el=>{
+      el.onclick=()=>{
+        const num=el.dataset.pnum, code=el.dataset.pcode;
+        const key = num==='bronze'?'bronze':+num;
+        if(userPicks[key]===code) delete userPicks[key]; else userPicks[key]=code;
+        save('wc26_userpicks',userPicks);
+        renderR32(applyOverrides(RAW));
+      };
+    });
+  }
+
+  // progress + clear button
+  const prog=document.getElementById('pick-progress'), clr=document.getElementById('clear-picks');
+  if(mode==='pick'){
+    const slots=[...Array(16).keys()].map(i=>73+i).concat([89,90,91,92,93,94,95,96,97,98,99,100,101,102,104]);
+    let made=0; slots.forEach(n=>{ if(M[n]&&M[n].winner&&M[n].pick) made++; });
+    prog.textContent=`${made} / 31 picks`; prog.classList.remove('hide');
+    clr.classList.toggle('hide', Object.keys(userPicks).length===0);
+  } else { prog.classList.add('hide'); clr.classList.add('hide'); }
+
+  const meta=document.getElementById('r32-meta');
+  if(meta){
+    if(mode==='pick') meta.textContent='your bracket · tap teams to advance them to the final';
+    else if(mode==='project') meta.textContent=allDone?'full bracket from results + live odds':'full projection · standings + live odds';
+    else meta.textContent=allDone?'groups decided — bracket is final':'fills as groups decide · or project / pick your own';
+  }
 }
 
 function renderMarket(){
@@ -761,6 +914,14 @@ document.getElementById('pred-wrap').onclick=()=>{
   document.getElementById('pred-sw').classList.toggle('on',prefs.pred);
   render();
 };
+document.getElementById('bracket-seg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  prefs.bracketMode=b.dataset.m; save('wc26_prefs',prefs);
+  document.querySelectorAll('#bracket-seg button').forEach(x=>x.classList.toggle('on',x.dataset.m===prefs.bracketMode));
+  renderR32(applyOverrides(RAW));
+});
+document.getElementById('clear-picks').onclick=()=>{
+  userPicks={}; save('wc26_userpicks',userPicks); renderR32(applyOverrides(RAW));
+};
 
 function showBanner(type,msg){ const b=document.getElementById('banner'); b.className='banner '+type; b.textContent=msg; }
 function hideBanner(){ document.getElementById('banner').className='banner'; }
@@ -777,6 +938,9 @@ setInterval(updateSyncedLabel,30000);
 (function init(){
   // restore prefs
   document.getElementById('pred-sw').classList.toggle('on',prefs.pred);
+  if(prefs.projectR32 && !prefs.bracketMode) prefs.bracketMode='project'; // migrate old toggle
+  const bm=prefs.bracketMode||'decide';
+  document.querySelectorAll('#bracket-seg button').forEach(x=>x.classList.toggle('on',x.dataset.m===bm));
   showView(prefs.view||'groups');
   // Render immediately from the best data we have, so the app is never blank:
   // cached sync > built-in snapshot. Live sync then layers on top.
