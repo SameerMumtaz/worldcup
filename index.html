@@ -436,7 +436,7 @@
   <!-- FIXTURES -->
   <section id="view-fixtures" class="hide">
     <button class="btn" id="fx-back" style="margin-bottom:14px">← HQ</button>
-    <div class="sec-head"><h2>All Fixtures &amp; Results</h2><span class="meta">tap any match to set a result manually</span></div>
+    <div class="sec-head"><h2>All Fixtures &amp; Results</h2><span class="meta">all 104 matches · your local time</span></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px" id="md-filter"></div>
     <div class="fixtures" id="fixtures"></div>
   </section>
@@ -521,24 +521,6 @@
     <button class="btn" id="set-refresh">↻ Refresh data now</button>
     <div class="set-about">Results sync from the public-domain openfootball feed (≈daily). Live championship odds from Polymarket. Standings use official FIFA tiebreakers; the bracket, forecast and picks are computed on-device. Not affiliated with FIFA. Manual results &amp; picks stay on this device.</div>
     <button class="btn primary" id="set-close">Done</button>
-  </div>
-</div>
-
-<!-- SCORE MODAL -->
-<div class="modal" id="modal">
-  <div class="card">
-    <h3 id="m-title">Set result</h3>
-    <div class="csub" id="m-sub"></div>
-    <div class="scoreedit">
-      <div class="te"><div class="fl" id="m-f1"></div><div class="nm" id="m-n1"></div><input type="number" min="0" id="m-s1" inputmode="numeric"></div>
-      <div class="dash">–</div>
-      <div class="te"><div class="fl" id="m-f2"></div><div class="nm" id="m-n2"></div><input type="number" min="0" id="m-s2" inputmode="numeric"></div>
-    </div>
-    <div class="actions">
-      <button class="btn" id="m-clear">Clear override</button>
-      <button class="btn primary" id="m-save">Save result</button>
-    </div>
-    <div class="hint">Manual results override the live feed and persist on this device. Use when the feed is behind. Clear to fall back to feed data.</div>
   </div>
 </div>
 
@@ -739,11 +721,10 @@ let RAW=[];            // normalized matches
 let POLY=load('wc26_poly',null);  // polymarket live odds
 let userPicks=load('wc26_userpicks',{}); // user's manual bracket: matchNum -> winner code
 let TABLES={};         // standings
-let overrides=load('wc26_overrides',{});   // matchKey -> [s1,s2]
 let prefs=load('wc26_prefs',{auto:false,pred:true,view:'groups',md:'all'});
 let lastSync=load('wc26_sync',null);
 let cached=load('wc26_cache',null);
-let autoTimer=null, modalKey=null;
+let autoTimer=null;
 
 function load(k,d){ try{const v=localStorage.getItem(k); return v?JSON.parse(v):d;}catch(e){return d;} }
 function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
@@ -752,8 +733,7 @@ const mkey = m => m.num ? 'n'+m.num : `${m.group}|${m.raw1}|${m.raw2}`;
 let LIVE=load('wc26_live',{}); // mkey -> {home,away,hs,as,state,clock,detail}
 function applyOverrides(matches){
   return matches.map(m=>{
-    const k=mkey(m), o=overrides[k];
-    if(o){ return {...m, s1:o[0], s2:o[1], played:true, manual:true}; }  // manual wins
+    const k=mkey(m);
     const lv=LIVE[k];
     if(lv && (m.t1===lv.home||m.t1===lv.away)){
       const s1 = lv.home===m.t1?lv.hs:lv.as, s2 = lv.home===m.t1?lv.as:lv.hs;
@@ -893,7 +873,7 @@ function espnCardTotals(){
 function renderXI(code){
   const L=(typeof LINEUPS!=='undefined')&&LINEUPS[code];
   if(!L||!L.players||!L.players.length){
-    return '<div class="tc-xi">Starting XI shows up here once ESPN posts the team sheet (usually ~1 hr before kickoff) and the match has been harvested. The base feed has no lineups \u2014 this pulls from ESPN match detail. If it stays empty on your hosted site, ESPN may be blocked there.</div>';
+    return '<div class="tc-xi">Lineup posts about an hour before kickoff — check back closer to their next match.</div>';
   }
   const opp=L.opp&&TEAMS[L.opp]?' vs '+TEAMS[L.opp][0]:'';
   const when=L.date?new Date(L.date+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'}):'';
@@ -979,12 +959,18 @@ function renderStatus(matches){
 function fmtKick(m){ // countdown-ish label for an upcoming match
   return fmtWhen(m);
 }
+function byKickoff(a,b){
+  const ra=matchInstant(a), rb=matchInstant(b);
+  const ka=ra?ra.getTime():(a.num?9e15+a.num:9e16);
+  const kb=rb?rb.getTime():(b.num?9e15+b.num:9e16);
+  return ka-kb || (a.num||0)-(b.num||0);
+}
 function renderToday(){
   const matches=applyOverrides(RAW);
   const todayStr=new Date().toISOString().slice(0,10);
   const withDate=matches.filter(m=>m.date);
   const played=withDate.filter(m=>m.played);
-  const upcoming=withDate.filter(m=>!m.played).sort((a,b)=>(a.date+a.round).localeCompare(b.date+b.round));
+  const upcoming=withDate.filter(m=>!m.played).slice().sort(byKickoff);
   // marquee: next match today > next upcoming > last result
   const todayMatches=upcoming.filter(m=>m.date===todayStr);
   let hero, heroTag;
@@ -1032,7 +1018,7 @@ function renderToday(){
       }).join('')+`</div>`;
   }
   // recent results
-  const recent=played.slice(-4).reverse();
+  const recent=played.slice().sort(byKickoff).slice(-4).reverse();
   if(recent.length){
     html+=`<div class="td-sec"><div class="h">Recent results<a data-go="fixtures">All →</a></div>`+
       recent.map(m=>`<div class="td-match"><span class="flag">${TEAMS[m.t1]?TEAMS[m.t1][1]:'⚽'}</span><span class="nm">${TEAMS[m.t1]?TEAMS[m.t1][0]:m.t1}</span><span class="sc">${m.s1}–${m.s2}</span><span class="nm">${TEAMS[m.t2]?TEAMS[m.t2][0]:m.t2}</span><span class="flag">${TEAMS[m.t2]?TEAMS[m.t2][1]:'⚽'}</span><span class="meta">FT</span></div>`).join('')+`</div>`;
@@ -1160,7 +1146,7 @@ function renderFixtures(matches){
   mdwrap.innerHTML=chips.map(r=>`<button class="btn ${prefs.md===r?'primary':''}" data-md="${r}">${r==='all'?'All':r}</button>`).join('');
   mdwrap.querySelectorAll('button').forEach(b=>b.onclick=()=>{prefs.md=b.dataset.md;save('wc26_prefs',prefs);renderFixtures(applyOverrides(RAW));});
 
-  const list = prefs.md==='all'?matches:matches.filter(m=>m.round===prefs.md);
+  const list = (prefs.md==='all'?matches:matches.filter(m=>m.round===prefs.md)).slice().sort(byKickoff);
   const html=list.map(m=>{
     const dallas = (m.ground||'').includes('Dallas') || (m.num&&DALLAS.has(m.num));
     const t1=m.t1?TEAMS[m.t1]:null, t2=m.t2?TEAMS[m.t2]:null;
@@ -1175,7 +1161,7 @@ function renderFixtures(matches){
       : (dallas?'<span class="dallas-tag">◆ ARLINGTON</span>':'');
     const statusLeft = isLive
       ? `<span class="live-detail">${m.liveDetail||'In progress'}</span>`
-      : (m.played?(m.manual?'<span class="manual-flag">✎ manual</span>':'Full time'):fmtWhen(m));
+      : (m.played?'Full time':fmtWhen(m));
     const statusRight = m.ground
       ? `<span class="venue">◍ ${m.ground}${dallas?'':''}</span>`
       : (m.group?'Group '+m.group:m.round);
@@ -1187,7 +1173,6 @@ function renderFixtures(matches){
     </div>`;
   }).join('');
   document.getElementById('fixtures').innerHTML=html;
-  document.querySelectorAll('.fx').forEach(fx=>fx.onclick=()=>openModal(fx.dataset.key));
 }
 
 // Knockout flow: match num -> [sourceA, sourceB]. 'W74' = winner of match 74.
@@ -1625,7 +1610,6 @@ function computeScorers(matches){
   const byTeam={}; list.forEach(p=>(byTeam[p.team]??=[]).push(p));
   return {list, byTeam};
 }
-let assists=load('wc26_assists',{}); // key name|team -> {name, team, count}
 function computeTeamStats(matches){
   const T={};
   matches.filter(m=>m.played&&m.t1&&m.t2).forEach(m=>{
@@ -1669,18 +1653,9 @@ function renderStats(){
     h+=`<div class="td-sec"><div class="h">🥇 Golden Boot · goals</div>`+
       (goals.length?goals.map((p,i)=>playerRow(p,i,p.goals,p.goals===1?'goal':'goals',p.pens?p.pens+' pen':'')).join(''):'<div class="sc-empty">No goals yet — fills as matches are played.</div>')+`</div>`;
     if(pens.length) h+=`<div class="td-sec"><div class="h">🎯 Penalty goals</div>`+pens.map((p,i)=>playerRow(p,i,p.pens,p.pens===1?'pen':'pens','')).join('')+`</div>`;
-    const manual=Object.values(assists);
-    const espnA=espnAssistTotals();
-    const aMap={};
-    espnA.forEach(a=>{ const k=a.name+'|'+a.team; (aMap[k]||(aMap[k]={name:a.name,team:a.team,count:0})).count+=a.count; });
-    manual.forEach(a=>{ const k=a.name+'|'+a.team; (aMap[k]||(aMap[k]={name:a.name,team:a.team,count:0})).count+=a.count; });
-    const aList=Object.values(aMap).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name)).slice(0,12);
-    const espnLive=espnA.length>0;
-    const opts=Object.keys(TEAMS).sort((a,b)=>TEAMS[a][0].localeCompare(TEAMS[b][0])).map(c=>`<option value="${c}">${TEAMS[c][0]}</option>`).join('');
-    h+=`<div class="td-sec"><div class="h">🅰️ Assists${espnLive?' · live + manual':' · manual'}</div>
-      <div class="assist-note">${espnLive?'Pulled live from ESPN match detail, plus anything you add manually.':'No assist data from the feed yet — log them yourself (persists on this device). Live assists appear here automatically if ESPN detail is reachable.'}</div>
-      <div class="assist-add"><input id="as-name" placeholder="Player name" autocomplete="off"><select id="as-team">${opts}</select><button class="btn primary" id="as-add">+ Add</button></div>`+
-      (aList.length?aList.map((p,i)=>playerRow({name:p.name,team:p.team},i,p.count,p.count===1?'assist':'assists','','var(--win)')).join(''):'<div class="sc-empty">No assists logged yet.</div>')+`</div>`;
+    const aList=espnAssistTotals().sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name)).slice(0,12);
+    h+=`<div class="td-sec"><div class="h">🅰️ Assists</div>`+
+      (aList.length?aList.map((p,i)=>playerRow({name:p.name,team:p.team},i,p.count,p.count===1?'assist':'assists','','var(--win)')).join(''):'<div class="sc-empty">No assists recorded yet.</div>')+`</div>`;
     // cards (ESPN)
     const cards=espnCardTotals().sort((a,b)=>b.red-a.red||b.yellow-a.yellow||a.name.localeCompare(b.name)).slice(0,12);
     h+=`<div class="td-sec"><div class="h">🟨 🟥 Cards${cards.length?' · via ESPN':''}</div>`+
@@ -1689,10 +1664,8 @@ function renderStats(){
             <div class="rk">${i+1}</div>
             <div class="who"><span class="nm">${c.name}</span><span class="tm tlink" data-team="${c.team}"><span class="flag">${t?t[1]:''}</span>${t?t[0]:c.team}</span></div>
             <div class="tally"><span class="cards-badge">${c.yellow?'🟨 '+c.yellow:''} ${c.red?'🟥 '+c.red:''}</span></div></div>`;}).join('')
-        : `<div class="assist-note">No card data yet. Cards come from ESPN match detail once games are played — if this stays empty after a match on your hosted site, ESPN may be blocked there (toggle live data in Settings). The feed itself has no cards.</div>`)+`</div>`;
+        : `<div class="sc-empty">No cards recorded yet.</div>`)+`</div>`;
     el.innerHTML=h;
-    const addBtn=document.getElementById('as-add');
-    if(addBtn) addBtn.onclick=()=>{ const nm=document.getElementById('as-name').value.trim(), tc=document.getElementById('as-team').value; if(!nm)return; const k=nm+'|'+tc; (assists[k]??={name:nm,team:tc,count:0}).count++; save('wc26_assists',assists); renderStats(); };
   } else {
     if(meta) meta.textContent='team leaderboards · computed from results';
     const arr=Object.values(computeTeamStats(matches));
@@ -1787,33 +1760,6 @@ function renderFooter(){
     `Manual results override the feed and stay on this device. Not affiliated with FIFA or Polymarket.`;
 }
 
-// ---- MODAL ----
-function openModal(key){
-  const m=applyOverrides(RAW).find(x=>mkey(x)===key); if(!m) return;
-  modalKey=key;
-  const t1=m.t1?TEAMS[m.t1]:null, t2=m.t2?TEAMS[m.t2]:null;
-  document.getElementById('m-title').textContent = (m.num?'Match '+m.num:'Group '+m.group)+' result';
-  document.getElementById('m-sub').textContent = `${m.raw1} vs ${m.raw2} · ${fmtWhen(m)}`;
-  document.getElementById('m-f1').textContent=t1?t1[1]:'🏳️';
-  document.getElementById('m-f2').textContent=t2?t2[1]:'🏳️';
-  document.getElementById('m-n1').textContent=t1?t1[0]:(m.slot1||m.raw1);
-  document.getElementById('m-n2').textContent=t2?t2[0]:(m.slot2||m.raw2);
-  document.getElementById('m-s1').value = m.played?m.s1:'';
-  document.getElementById('m-s2').value = m.played?m.s2:'';
-  const canEdit = m.t1&&m.t2;
-  document.getElementById('m-s1').disabled=!canEdit;
-  document.getElementById('m-s2').disabled=!canEdit;
-  document.getElementById('m-clear').style.display = overrides[key]?'block':'none';
-  document.getElementById('modal').classList.add('on');
-}
-function closeModal(){ document.getElementById('modal').classList.remove('on'); modalKey=null; }
-document.getElementById('m-save').onclick=()=>{
-  const s1=parseInt(document.getElementById('m-s1').value), s2=parseInt(document.getElementById('m-s2').value);
-  if(Number.isNaN(s1)||Number.isNaN(s2)){ closeModal(); return; }
-  overrides[modalKey]=[s1,s2]; save('wc26_overrides',overrides); closeModal(); render();
-};
-document.getElementById('m-clear').onclick=()=>{ delete overrides[modalKey]; save('wc26_overrides',overrides); closeModal(); render(); };
-document.getElementById('modal').onclick=e=>{ if(e.target.id==='modal') closeModal(); };
 document.getElementById('stats-seg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
   prefs.statsTab=b.dataset.t; save('wc26_prefs',prefs);
   document.querySelectorAll('#stats-seg button').forEach(x=>x.classList.toggle('on',x.dataset.t===prefs.statsTab));
