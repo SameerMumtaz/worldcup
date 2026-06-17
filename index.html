@@ -325,6 +325,14 @@
   .assist-add input{flex:1; min-width:120px}
   .assist-note{font-size:11px; color:var(--faint); margin-bottom:12px; line-height:1.5}
   .cards-badge{font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; white-space:nowrap}
+  .xi-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px}
+  .xi-form{font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--gold); letter-spacing:.06em}
+  .xi-meta{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--faint)}
+  .xi-list{display:flex; flex-direction:column; gap:1px}
+  .xi-row{display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--line2); font-size:13px}
+  .xi-num{font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--gold); width:22px; text-align:center; flex-shrink:0}
+  .xi-name{font-weight:600}
+  .xi-pos{margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted)}
 
   /* ===== TEAM CARD ===== */
   .tlink{cursor:pointer; border-bottom:1px dotted transparent; transition:border-color .15s}
@@ -814,6 +822,7 @@ async function fetchLive(){
 
 // ===== ESPN MATCH DETAIL (cards + assists via summary endpoint) =====
 let ESPN_DETAIL=load('wc26_espndetail',{events:{}});
+let LINEUPS=load('wc26_lineups',{}); // teamCode -> {date,opp,players,formation}
 function parseEspnSummary(j){
   const cards=[], assists=[];
   const idToCode={};
@@ -834,7 +843,15 @@ function parseEspnSummary(j){
       if(parts.length>1){ const an=nameOf(parts[1]); const sc=nameOf(parts[0]); if(an&&an!==sc&&code) assists.push({name:an,team:code}); }
     }
   });
-  return {cards,assists};
+  const lineups={};
+  const rosters=j.rosters||(j.gamepackageJSON&&j.gamepackageJSON.rosters)||[];
+  rosters.forEach(rt=>{
+    const tm=rt.team||{}; const code=espnCode(tm.displayName||tm.name||tm.shortDisplayName); if(!code) return;
+    const arr=rt.roster||rt.athletes||[];
+    const starters=arr.filter(p=>p.starter===true||p.starter==='true').map(p=>{ const a=p.athlete||p; return {name:a.displayName||a.shortName||a.name, pos:(p.position&&(p.position.abbreviation||p.position.name))||(a.position&&a.position.abbreviation)||'', num:p.jersey||a.jersey||''}; });
+    if(starters.length){ const f=rt.formation; lineups[code]={players:starters, formation:(typeof f==='string'?f:(f&&(f.name||f.displayName))||'')}; }
+  });
+  return {cards,assists,lineups};
 }
 async function harvestEspnDetail(){
   if(prefs.live===false) return false;
@@ -846,7 +863,7 @@ async function harvestEspnDetail(){
       const url=`https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=${ds.replace(/-/g,'')}`;
       const r=await fetch(url,{cache:'no-store'}); if(!r.ok) continue;
       const j=await r.json();
-      (j.events||[]).forEach(ev=>{ const st=ev.status&&ev.status.type&&ev.status.type.state; if(st==='post'||st==='in') events.push({id:ev.id,state:st}); });
+      (j.events||[]).forEach(ev=>{ const st=ev.status&&ev.status.type&&ev.status.type.state; if(st==='post'||st==='in') events.push({id:ev.id,state:st,date:(ev.date||'').slice(0,10)}); });
     }
     let changed=false;
     for(const e of events){
@@ -857,9 +874,11 @@ async function harvestEspnDetail(){
       const j=await r.json();
       const p=parseEspnSummary(j);
       ESPN_DETAIL.events[e.id]={state:e.state, cards:p.cards, assists:p.assists};
+      const codes=Object.keys(p.lineups||{});
+      codes.forEach(code=>{ const opp=codes.find(c=>c!==code)||null; const prev=LINEUPS[code]; if(!prev || (e.date||'')>=(prev.date||'')){ LINEUPS[code]={date:e.date||'', opp, players:p.lineups[code].players, formation:p.lineups[code].formation||''}; } });
       changed=true;
     }
-    if(changed) save('wc26_espndetail',ESPN_DETAIL);
+    if(changed){ save('wc26_espndetail',ESPN_DETAIL); save('wc26_lineups',LINEUPS); }
     return changed;
   }catch(e){ return false; }
 }
@@ -870,6 +889,16 @@ function espnCardTotals(){
     if(c.type==='red')p.red++; else p.yellow++;
   }));
   return Object.values(P);
+}
+function renderXI(code){
+  const L=(typeof LINEUPS!=='undefined')&&LINEUPS[code];
+  if(!L||!L.players||!L.players.length){
+    return '<div class="tc-xi">Starting XI shows up here once ESPN posts the team sheet (usually ~1 hr before kickoff) and the match has been harvested. The base feed has no lineups \u2014 this pulls from ESPN match detail. If it stays empty on your hosted site, ESPN may be blocked there.</div>';
+  }
+  const opp=L.opp&&TEAMS[L.opp]?' vs '+TEAMS[L.opp][0]:'';
+  const when=L.date?new Date(L.date+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'}):'';
+  const rows=L.players.map(p=>'<div class="xi-row"><span class="xi-num">'+(p.num||'\u00b7')+'</span><span class="xi-name">'+p.name+'</span><span class="xi-pos">'+(p.pos||'')+'</span></div>').join('');
+  return '<div class="xi-head">'+(L.formation?'<span class="xi-form">'+L.formation+'</span>':'<span></span>')+'<span class="xi-meta">'+when+opp+'</span></div><div class="xi-list">'+rows+'</div>';
 }
 function espnAssistTotals(){
   const P={};
@@ -1741,7 +1770,7 @@ function openTeam(code){
     ${upHtml?`<div class="tc-sec"><div class="h">Up next</div>${upHtml}</div>`:''}
     <div class="tc-sec"><div class="h">Goalscorers</div><div>${scHtml}</div></div>
     <div class="tc-sec"><div class="h">Starting XI</div>
-      <div class="tc-xi">⚠️ Lineups aren't in the free data feed — a true match-day starting XI needs a paid lineup API (and isn't confirmed until ~1hr before kickoff). Everything above is live from real results. Want me to wire a squad source? That's a quick add with an API key.</div>
+      ${renderXI(code)}
     </div>`;
   document.getElementById('tc-x').onclick=closeTeam;
   document.getElementById('team-modal').classList.add('on');
