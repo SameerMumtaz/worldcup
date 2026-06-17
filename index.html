@@ -425,6 +425,9 @@
   .cm-ic{flex-shrink:0}
   .cm-tx{color:var(--muted); line-height:1.45}
   .plink{cursor:pointer; border-bottom:1px dotted var(--gold-dim)}
+  .mrow{cursor:pointer; -webkit-tap-highlight-color:transparent}
+  .td-match.mrow:active{background:var(--panel)}
+  .today-hero.mrow:active{filter:brightness(1.07)}
   .pl-head{display:flex; align-items:center; gap:14px; margin-bottom:16px; padding-right:30px}
   .pl-head .flag{font-size:46px}
   .pl-tiles{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
@@ -1110,7 +1113,7 @@ function renderToday(){
       const cd= dd<=0?(fmtTime(hero)||'Today'):dd===1?'Tomorrow · '+fmtTime(hero):`in ${dd} days`;
       mid=`<div class="vs">vs</div><div class="cd">${cd}</div>`;
     }
-    heroEl.innerHTML=`<div class="today-hero">
+    heroEl.innerHTML=`<div class="today-hero mrow" data-mkey="${mkey(hero)}">
       <div class="tag"><span class="livedot"></span> ${tag} · ${hero.round}${dallas?' · <span style="color:var(--dallas)">◆ Arlington</span>':''}</div>
       <div class="matchup">
         <div class="tm tlink" data-team="${a}"><span class="flag">${fl(a)}</span><span class="nm">${nm(a,hero.raw1)}</span></div>
@@ -1152,14 +1155,14 @@ function renderToday(){
         const dd=dayDiff(m.date);
         const when= m.live?`<span style="color:var(--live)">● ${m.liveClock||'LIVE'}</span>` : (dd===0?(fmtTime(m)||'today') : (dd===1?'tmrw '+fmtTime(m):fmtWhen(m)));
         const liveSc = m.live?`<span class="sc" style="color:var(--live)">${m.s1}–${m.s2}</span>`:'';
-        return `<div class="td-match"><span class="flag">${TEAMS[m.t1]?TEAMS[m.t1][1]:'⚽'}</span><span class="nm">${TEAMS[m.t1]?TEAMS[m.t1][0]:(m.raw1||m.t1)}</span>${liveSc||'<span class="sep">v</span>'}<span class="flag">${TEAMS[m.t2]?TEAMS[m.t2][1]:'⚽'}</span><span class="nm">${TEAMS[m.t2]?TEAMS[m.t2][0]:(m.raw2||m.t2)}</span><span class="meta">${when}</span></div>`;
+        return `<div class="td-match mrow" data-mkey="${mkey(m)}"><span class="flag tlink" data-team="${m.t1||''}">${TEAMS[m.t1]?TEAMS[m.t1][1]:'⚽'}</span><span class="nm tlink" data-team="${m.t1||''}">${TEAMS[m.t1]?TEAMS[m.t1][0]:(m.raw1||m.t1)}</span>${liveSc||'<span class="sep">v</span>'}<span class="flag tlink" data-team="${m.t2||''}">${TEAMS[m.t2]?TEAMS[m.t2][1]:'⚽'}</span><span class="nm tlink" data-team="${m.t2||''}">${TEAMS[m.t2]?TEAMS[m.t2][0]:(m.raw2||m.t2)}</span><span class="meta">${when}</span></div>`;
       }).join('')+`</div>`;
   }
   // recent results
   const recent=played.slice().sort(byKickoff).slice(-4).reverse();
   if(recent.length){
     html+=`<div class="td-sec"><div class="h">Recent results<a data-go="fixtures">All →</a></div>`+
-      recent.map(m=>`<div class="td-match"><span class="flag">${TEAMS[m.t1]?TEAMS[m.t1][1]:'⚽'}</span><span class="nm">${TEAMS[m.t1]?TEAMS[m.t1][0]:m.t1}</span><span class="sc">${m.s1}–${m.s2}</span><span class="nm">${TEAMS[m.t2]?TEAMS[m.t2][0]:m.t2}</span><span class="flag">${TEAMS[m.t2]?TEAMS[m.t2][1]:'⚽'}</span><span class="meta">FT</span></div>`).join('')+`</div>`;
+      recent.map(m=>`<div class="td-match mrow" data-mkey="${mkey(m)}"><span class="flag tlink" data-team="${m.t1||''}">${TEAMS[m.t1]?TEAMS[m.t1][1]:'⚽'}</span><span class="nm tlink" data-team="${m.t1||''}">${TEAMS[m.t1]?TEAMS[m.t1][0]:m.t1}</span><span class="sc">${m.s1}–${m.s2}</span><span class="nm tlink" data-team="${m.t2||''}">${TEAMS[m.t2]?TEAMS[m.t2][0]:m.t2}</span><span class="flag tlink" data-team="${m.t2||''}">${TEAMS[m.t2]?TEAMS[m.t2][1]:'⚽'}</span><span class="meta">FT</span></div>`).join('')+`</div>`;
   }
   // full schedule path
   const total=matches.length, donen=played.length;
@@ -2272,6 +2275,7 @@ document.getElementById('search-input').oninput=e=>runSearch(e.target.value);
 document.getElementById('search-modal').onclick=e=>{ if(e.target.id==='search-modal') closeSearch(); };
 document.addEventListener('click',e=>{ const el=e.target.closest('.tlink'); if(el&&el.dataset.team) openTeam(el.dataset.team); });
 document.addEventListener('click',e=>{ const pl=e.target.closest('.plink'); if(pl&&pl.dataset.player) openPlayer(pl.dataset.player, pl.dataset.pteam); });
+document.addEventListener('click',e=>{ if(e.target.closest('.tlink')||e.target.closest('.plink')) return; const el=e.target.closest('.mrow'); if(el&&el.dataset.mkey) openMatch(el.dataset.mkey); });
 
 // ---- CONTROLS ----
 function showTab(tab){
