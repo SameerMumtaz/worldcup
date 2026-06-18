@@ -30,11 +30,12 @@
     --live:#ff4757;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html{-webkit-text-size-adjust:100%; height:100%}
+  html{-webkit-text-size-adjust:100%; height:100%; background:#0a0a0c}
   body{
-    background:radial-gradient(1200px 600px at 50% -10%, #15151c 0%, var(--bg) 60%);
+    background-color:#0a0a0c;
+    background-image:radial-gradient(1200px 600px at 50% -10%, #15151c 0%, var(--bg) 60%);
     color:var(--txt); font-family:'Outfit',system-ui,sans-serif; line-height:1.5;
-    height:100%; display:flex; flex-direction:column; overflow:hidden; -webkit-font-smoothing:antialiased;
+    height:100vh; height:100dvh; display:flex; flex-direction:column; overflow:hidden; -webkit-font-smoothing:antialiased;
   }
   .wrap{max-width:1080px; margin:0 auto; padding:0 16px; width:100%; flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch}
 
@@ -664,7 +665,7 @@ const SOURCES = {
 // Polymarket re-slugs events over time; try the current slug first, then fall back.
 const PM_WINNER_SLUGS = ['world-cup-winner','2026-fifa-world-cup-winner-595','2026-fifa-world-cup-winner'];
 const POLY_EVENT_BASE = 'https://gamma-api.polymarket.com/events?slug=';
-const BUILD = '2026.06.18-9';   // bump every deploy; shown in footer so you can confirm what's live
+const BUILD = '2026.06.18-10';   // bump every deploy; shown in footer so you can confirm what's live
 
 // Built-in snapshot so the app always renders, even with no network / in a
 // sandboxed preview. Live sync layers fresher data on top when available.
@@ -1216,7 +1217,7 @@ function renderToday(){
   const fav=(POLY&&POLY.live&&POLY.live[0])?POLY.live[0]:null;
   let mover=null; if(POLY&&POLY.live){ mover=[...POLY.live].sort((x,y)=>Math.abs(y.move)-Math.abs(x.move))[0]; if(mover&&Math.abs(mover.move)<0.003) mover=null; }
   html+=`<div class="td-sec"><div class="h">Tournament leaders</div><div class="lead-grid">
-    <div class="lead ${boot?'tlink':''}" ${boot?`data-team="${boot.team}"`:''}><div class="k">🥇 Golden Boot</div>
+    <div class="lead ${boot?'plink':''}" ${boot?`data-player="${boot.name}" data-pteam="${boot.team}"`:''}><div class="k">🥇 Golden Boot</div>
       <div class="v">${boot?`<span class="flag">${TEAMS[boot.team]?TEAMS[boot.team][1]:''}</span>${boot.name.split(' ').slice(-1)[0]}`:'—'}</div>
       <div class="sub">${boot?boot.goals+' goals':'no goals yet'}</div></div>
     <div class="lead" data-go="forecast"><div class="k">Title favourite</div>
@@ -1561,7 +1562,8 @@ function renderMarket(){
       : delta<-0.3?`<span style="color:var(--lose)">${delta.toFixed(1)}</span>`
       : `<span style="color:var(--muted)">${delta>=0?'+':''}${delta.toFixed(1)}</span>`;
     const barw=Math.min(100, mk/Math.max(...POLY.live.map(x=>x.yes*100))*100);
-    return `<tr>
+    const canOpen = r.code && TEAMS[r.code];
+    return `<tr${canOpen?` class="tlink" data-team="${r.code}" style="cursor:pointer"`:''}>
       <td style="color:var(--faint);font-size:11px">${i+1}</td>
       <td class="tn">${nm}</td>
       <td style="position:relative">
