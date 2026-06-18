@@ -261,24 +261,26 @@
     background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:20px; padding:7px 13px; cursor:pointer; white-space:nowrap; transition:.15s; backdrop-filter:blur(8px)}
   .bkt-chip.on{color:#0a0a0c; background:linear-gradient(135deg,var(--gold),#f0d878); border-color:transparent; font-weight:700}
   .bkt-wrap{position:relative; height:74vh; min-height:440px; overflow:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-x pan-y;
+    scroll-snap-type:x proximity; scroll-padding-left:14px; scroll-behavior:smooth;
     border:1px solid rgba(255,255,255,.06); border-radius:18px;
     background:
       radial-gradient(900px 500px at 12% -8%, rgba(212,175,55,.10), transparent 60%),
       radial-gradient(700px 600px at 95% 110%, rgba(96,120,255,.10), transparent 60%),
       linear-gradient(180deg, rgba(20,20,28,.6), rgba(8,8,12,.6))}
   .bkt-canvas{position:relative}
+  .bkt-snap{position:absolute; top:0; bottom:0; width:1px; pointer-events:none; scroll-snap-align:start}
   .bkt-svg{position:absolute; inset:0; pointer-events:none; z-index:1; overflow:visible}
   .bkt-conn{fill:none; stroke:rgba(255,255,255,.13); stroke-width:1.5}
   .bkt-conn.live{stroke:rgba(212,175,55,.55); stroke-width:2}
   .bkt-col-h{position:absolute; font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:.08em; color:var(--gold); white-space:nowrap; opacity:.9}
-  .bkt-card{position:absolute; z-index:2; border-radius:13px; overflow:hidden;
+  .bkt-card{position:absolute; z-index:2; border-radius:13px; overflow:hidden; height:80px; display:flex; flex-direction:column;
     background:rgba(255,255,255,.045); backdrop-filter:blur(14px) saturate(1.25); -webkit-backdrop-filter:blur(14px) saturate(1.25);
     border:1px solid rgba(255,255,255,.10); box-shadow:0 6px 22px rgba(0,0,0,.4)}
   .bkt-card.dallas{border-color:rgba(255,158,27,.4); box-shadow:0 6px 22px rgba(255,158,27,.12)}
   .bkt-card.final-card{border-color:rgba(212,175,55,.5); box-shadow:0 8px 30px rgba(212,175,55,.18)}
-  .bkt-ml{display:flex; justify-content:space-between; align-items:center; padding:5px 9px 3px; font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:.05em; color:var(--faint); text-transform:uppercase}
+  .bkt-ml{flex:0 0 auto; display:flex; justify-content:space-between; align-items:center; padding:5px 9px 3px; font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:.05em; color:var(--faint); text-transform:uppercase}
   .bkt-ml .dot{color:var(--dallas)}
-  .bkt-slot{display:flex; align-items:center; gap:7px; padding:7px 9px; font-size:12.5px; font-weight:600; position:relative; min-height:20px}
+  .bkt-slot{flex:1 1 0; min-height:0; display:flex; align-items:center; gap:7px; padding:0 9px; font-size:12.5px; font-weight:600; position:relative}
   .bkt-slot+.bkt-slot{border-top:1px solid rgba(255,255,255,.06)}
   .bkt-slot.win{background:linear-gradient(90deg,rgba(212,175,55,.18),rgba(212,175,55,.02)); color:var(--gold); font-weight:700}
   .bkt-slot.win::before{content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--gold)}
@@ -706,7 +708,7 @@ const SOURCES = {
 // Polymarket re-slugs events over time; try the current slug first, then fall back.
 const PM_WINNER_SLUGS = ['world-cup-winner','2026-fifa-world-cup-winner-595','2026-fifa-world-cup-winner'];
 const POLY_EVENT_BASE = 'https://gamma-api.polymarket.com/events?slug=';
-const BUILD = '2026.06.18-12';   // bump every deploy; shown in footer so you can confirm what's live
+const BUILD = '2026.06.18-14';   // bump every deploy; shown in footer so you can confirm what's live
 
 // Built-in snapshot so the app always renders, even with no network / in a
 // sandboxed preview. Live sync layers fresher data on top when available.
@@ -1526,7 +1528,7 @@ function renderR32(matches){
     return `<div class="bkt-slot tbd"><span class="bkt-nm">${tbdLabel(slot)}</span></div>`;
   }
   // geometry: lay rounds left→right, each match centered between its two feeders
-  const CARD_W=158, CARD_H=52, GAP_Y=14, COL_GAP=46, PAD_T=42, PAD_L=12, PAD_B=72;
+  const CARD_W=158, CARD_H=80, GAP_Y=14, COL_GAP=46, PAD_T=42, PAD_L=12, PAD_B=72;
   const rowPitch=CARD_H+GAP_Y, colPitch=CARD_W+COL_GAP;
   const centers=[]; centers[0]=BKT_COLS[0].nums.map((n,i)=>PAD_T+i*rowPitch+CARD_H/2);
   for(let c=1;c<BKT_COLS.length;c++) centers[c]=BKT_COLS[c].nums.map((n,p)=>(centers[c-1][2*p]+centers[c-1][2*p+1])/2);
@@ -1548,8 +1550,8 @@ function renderR32(matches){
     </div>`;
   }
 
-  let cards='', conns='', heads='';
-  BKT_COLS.forEach((col,c)=>{ col.nums.forEach((n,p)=>{ cards+=bktCard(n,c,p); }); heads+=`<div class="bkt-col-h" style="left:${colX[c]}px;top:12px">${col.full}</div>`; });
+  let cards='', conns='', heads='', snaps='';
+  BKT_COLS.forEach((col,c)=>{ col.nums.forEach((n,p)=>{ cards+=bktCard(n,c,p); }); heads+=`<div class="bkt-col-h" style="left:${colX[c]}px;top:12px">${col.full}</div>`; snaps+=`<div class="bkt-snap" style="left:${colX[c]}px"></div>`; });
   for(let c=1;c<BKT_COLS.length;c++){
     BKT_COLS[c].nums.forEach((pn,p)=>{
       const parentX=colX[c], parentY=centers[c][p], childX=colX[c-1]+CARD_W, midX=(childX+parentX)/2;
@@ -1580,7 +1582,7 @@ function renderR32(matches){
     <div class="bkt-rounds" id="bkt-rounds">${chips}</div>
     <div class="bkt-wrap" id="bkt-wrap">
       <div class="bkt-canvas" style="width:${cw}px;height:${ch}px">
-        <svg class="bkt-svg" width="${cw}" height="${ch}" viewBox="0 0 ${cw} ${ch}">${conns}</svg>
+        ${snaps}<svg class="bkt-svg" width="${cw}" height="${ch}" viewBox="0 0 ${cw} ${ch}">${conns}</svg>
         ${heads}${cards}${bronze}
       </div>
     </div>`;
