@@ -666,8 +666,10 @@ const EMBED_ASOF = 'Jun 14, 2026';
 const MODEL_STRENGTH = {
   ESP:18.1, FRA:16.4, ENG:14.5, BRA:11.5, ARG:11.3, POR:8.8, GER:8.0, NED:5.6,
   BEL:4.5, NOR:3.6, MAR:2.0, COL:2.0, USA:1.7, URU:1.5, JPN:1.5, MEX:1.5,
-  CRO:1.4, SUI:1.3, TUR:1.3, SWE:1.2, SEN:1.0, ECU:1.0, AUT:1.0, PAR:0.7,
-  SCO:0.7, CIV:0.6, CZE:0.6, CAN:0.6, EGY:0.5, ALG:0.4, GHA:0.4,
+  CRO:1.4, SUI:1.3, TUR:1.3, KOR:1.3, SWE:1.2, IRN:1.1, SEN:1.0, ECU:1.0,
+  AUT:1.0, AUS:0.9, BIH:0.8, PAR:0.7, SCO:0.7, TUN:0.7, CIV:0.6, CZE:0.6,
+  CAN:0.6, KSA:0.6, COD:0.6, RSA:0.55, EGY:0.5, QAT:0.5, CPV:0.45, UZB:0.45,
+  ALG:0.4, GHA:0.4, PAN:0.4, IRQ:0.4, JOR:0.35, NZL:0.3, HAI:0.3, CUW:0.25,
 };
 
 // ---- TEAM CODES / FLAGS ----
@@ -2122,7 +2124,7 @@ function refreshOpenMatch(){ if(openMatchKey && document.getElementById('match-m
 document.getElementById('match-modal').onclick=e=>{ if(e.target.id==='match-modal') closeMatch(); };
 
 // ---- LIVE WIN PROBABILITY ----
-function _wpStr(code){ if(MODEL_STRENGTH[code]!=null) return MODEL_STRENGTH[code]; if(POLY&&POLY.live){ const p=POLY.live.find(x=>x.code===code); if(p) return p.norm*100; } return 5; }
+function _wpStr(code){ if(MODEL_STRENGTH[code]!=null) return MODEL_STRENGTH[code]; if(POLY&&POLY.live){ const p=POLY.live.find(x=>x.code===code); if(p) return p.norm*100; } return 0.3; }
 function _erf(x){ const s=x<0?-1:1; x=Math.abs(x); const t=1/(1+0.3275911*x); const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x); return s*y; }
 function _Phi(z){ return 0.5*(1+_erf(z/Math.SQRT2)); }
 function modelProbs(base,f,d){
@@ -2131,7 +2133,31 @@ function modelProbs(base,f,d){
   let pd=_Phi(zhi)-_Phi(zlo), p1=1-_Phi(zhi), p2=_Phi(zlo); const tot=p1+pd+p2||1;
   return {p1:p1/tot,pd:pd/tot,p2:p2/tot};
 }
-function _modelBase(m){ const s1=Math.max(0.01,_wpStr(m.t1)), s2=Math.max(0.01,_wpStr(m.t2)); return Math.max(-1.6,Math.min(1.6,(s1-s2)/(s1+s2)*2.2)); }
+// in-tournament scoring form: goals for / against per game actually played
+function teamFormStats(code){
+  if(!code) return null;
+  const ms=applyOverrides(RAW); let gf=0,ga=0,gp=0;
+  for(const m of ms){
+    if(!m.played && !m.live) continue;
+    if(m.t1!==code && m.t2!==code) continue;
+    const a=m.s1||0, b=m.s2||0;
+    if(m.t1===code){ gf+=a; ga+=b; } else { gf+=b; ga+=a; }
+    gp++;
+  }
+  return gp? {gpf:gf/gp, gpa:ga/gp, gp} : null;
+}
+function _modelBase(m){
+  const s1=Math.max(0.01,_wpStr(m.t1)), s2=Math.max(0.01,_wpStr(m.t2));
+  let base=(s1-s2)/(s1+s2)*2.2;
+  // blend pre-tournament rating with what each side has actually done so far
+  const f1=teamFormStats(m.t1), f2=teamFormStats(m.t2);
+  if(f1&&f2){
+    const g=Math.min(f1.gp,f2.gp), w=Math.min(0.7,0.27*g);
+    const formBase=Math.max(-1.6,Math.min(1.6,((f1.gpf-f1.gpa)-(f2.gpf-f2.gpa))*0.6));
+    base=(1-w)*base+w*formBase;
+  }
+  return Math.max(-1.6,Math.min(1.6,base));
+}
 // invert a market 3-way into an expected-supremacy "base" consistent with its lean (monotonic in p1-p2)
 function baseFromMarket(p1,p2){ const target=p1-p2; let lo=-4,hi=4; for(let i=0;i<40;i++){ const mid=(lo+hi)/2; const z=modelProbs(mid,0,0); if(z.p1-z.p2<target) lo=mid; else hi=mid; } return (lo+hi)/2; }
 
@@ -2222,20 +2248,43 @@ function matchXG(m){
   const pm=matchMarketFor(m); const usable=!!(pm&&!pm.thin&&!pm.closed);
   const base = usable ? baseFromMarket(pm.p1,pm.p2) : _modelBase(m);
   const T=2.7; // baseline total goals
-  return { xg1:Math.max(0.25,(T+base)/2), xg2:Math.max(0.25,(T-base)/2) };
+  let xg1=Math.max(0.25,(T+base)/2), xg2=Math.max(0.25,(T-base)/2);
+  // shift expected goals toward demonstrated form: own attack vs opponent defence
+  const f1=teamFormStats(m.t1), f2=teamFormStats(m.t2);
+  if(f1&&f2){
+    const g=Math.min(f1.gp,f2.gp), w=Math.min(0.72,0.30*g);
+    const form1=0.65*f1.gpf+0.35*f2.gpa, form2=0.65*f2.gpf+0.35*f1.gpa;
+    xg1=Math.max(0.2,(1-w)*xg1+w*form1);
+    xg2=Math.max(0.2,(1-w)*xg2+w*form2);
+  }
+  // attacking pedigree: better-offence sides sustain more xG, weak attacks less
+  xg1=Math.max(0.18, xg1*attackClass(m.t1));
+  xg2=Math.max(0.18, xg2*attackClass(m.t2));
+  return { xg1, xg2 };
 }
-function posBucket(pos){ const p=(pos||'').toUpperCase();
+function posBucket(pos){ const p=(pos||'').toUpperCase().replace(/[^A-Z]/g,'');
   if(!p) return 'UNK';
-  if(p.startsWith('G')) return 'GK';
-  if(p==='SS'||p.includes('AM')) return 'AM';
-  if(/^[LR]?W/.test(p)) return 'WING';
-  if(/^[LRC]?F/.test(p)||p==='ST'||p==='S'||p.includes('CF')) return 'FWD';
-  if(/^[LRC]?[DB]/.test(p)||/^WB/.test(p)) return 'DEF';
-  if(/M/.test(p)) return 'MID';
+  if(p==='G'||p==='GK') return 'GK';
+  if(p.includes('WB')||p==='RB'||p==='LB') return 'WB';            // wing-backs / full-backs (defensive)
+  if(p.includes('AM')||p==='SS'||p==='CAM') return 'AM';          // attacking mid / second striker
+  if(p==='RW'||p==='LW'||p==='W') return 'WING';                  // pure wingers (not wing-backs)
+  if(p==='ST'||p==='S'||p==='F'||p==='CF'||p==='RF'||p==='LF'||p==='FW') return 'FWD';
+  if(p.includes('CB')||p==='D'||p==='CD'||p==='RCB'||p==='LCB') return 'DEF'; // centre-backs
+  if(p.includes('M')) return 'MID';                              // DM/CDM/CM/RM/LM/M
   return 'UNK';
 }
-const _PP_SW={FWD:1.0,WING:0.72,AM:0.65,MID:0.42,DEF:0.16,GK:0.02,UNK:0.4};
-const _PP_AW={FWD:0.6,WING:0.9,AM:0.85,MID:0.7,DEF:0.3,GK:0.03,UNK:0.45};
+const _PP_SW={FWD:1.0,WING:0.72,AM:0.6,MID:0.4,WB:0.18,DEF:0.14,GK:0.02,UNK:0.38};
+const _PP_AW={FWD:0.55,WING:0.9,AM:0.85,MID:0.7,WB:0.6,DEF:0.28,GK:0.03,UNK:0.45};
+// attacking class from pre-tournament rating -> gentle xG multiplier (~0.8 weak .. ~1.32 elite)
+function attackClass(code){ const s=MODEL_STRENGTH[code]; if(s==null) return 0.85; return Math.max(0.8, Math.min(1.32, 0.86+0.12*Math.log(1+s))); }
+// recognised international goal threats -> heuristic personal boost so proven finishers rank up (curated, not exhaustive)
+const _norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,' ').replace(/\s+/g,' ').trim();
+const MARQUEE_PHRASE=['kolo muani','julian alvarez','bruno fernandes','goncalo ramos','raul jimenez','santiago gimenez','luis diaz','james rodriguez','enner valencia','inaki williams','nico williams','son heung','hwang hee','en nesyri'];
+const MARQUEE_TOK=new Set(['mbappe','dembele','thuram','kane','foden','bellingham','saka','watkins','vinicius','rodrygo','raphinha','richarlison','endrick','messi','lautaro','alvarez','ronaldo','leao','havertz','musiala','wirtz','fullkrug','depay','gakpo','lukaku','openda','haaland','sorloth','kramaric','nunez','schick','hlozek','hakimi','mane','mitoma','kubo','pulisic','balogun','embolo','isak','gyokeres','arnautovic','kudus','taremi','salah','mahrez','morata','yamal']);
+function marqueeMult(name){ const norm=_norm(name); if(!norm) return 1; const toks=norm.split(' ');
+  for(const p of MARQUEE_PHRASE){ if(norm.includes(p)) return 1.6; }
+  for(const t of toks){ if(MARQUEE_TOK.has(t)) return 1.6; }
+  return 1; }
 function teamProps(code, xg, SC, AS){
   const lu=LINEUPS[code]; const hasLineup=!!(lu&&lu.players&&lu.players.length);
   let cands;
@@ -2244,8 +2293,8 @@ function teamProps(code, xg, SC, AS){
   if(!cands.length) return [];
   const gOf=n=>{ const p=SC.find(x=>x.name===n&&x.team===code); return p?p.goals:0; };
   const aOf=n=>{ const a=AS.find(x=>x.name===n&&x.team===code); return a?a.count:0; };
-  const rows=cands.map(c=>{ const b=posBucket(c.pos); const g=gOf(c.name), a=aOf(c.name);
-    return {name:c.name, sw:_PP_SW[b]*(1+g*0.8), aw:_PP_AW[b]*(1+a*0.8), g, a}; });
+  const rows=cands.map(c=>{ const b=posBucket(c.pos); const g=gOf(c.name), a=aOf(c.name); const mq=marqueeMult(c.name);
+    return {name:c.name, sw:_PP_SW[b]*(1+g*1.4)*mq, aw:_PP_AW[b]*(1+a*1.0)*(1+(mq-1)*0.5), g, a}; });
   let swT=rows.reduce((s,r)=>s+r.sw,0)||1, awT=rows.reduce((s,r)=>s+r.aw,0)||1;
   if(!hasLineup){ swT+=swT*0.8; awT+=awT*0.8; } // dampen: unlisted starters also carry threat
   rows.forEach(r=>{ r.pScore=1-Math.exp(-xg*(r.sw/swT)); r.pAssist=1-Math.exp(-xg*0.75*(r.aw/awT)); });
