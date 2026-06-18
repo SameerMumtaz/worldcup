@@ -8,6 +8,13 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <meta name="theme-color" content="#0a0a0c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WC26">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -657,6 +664,7 @@ const SOURCES = {
 // Polymarket re-slugs events over time; try the current slug first, then fall back.
 const PM_WINNER_SLUGS = ['2026-fifa-world-cup-winner-595','2026-fifa-world-cup-winner','world-cup-winner'];
 const POLY_EVENT_BASE = 'https://gamma-api.polymarket.com/events?slug=';
+const BUILD = '2026.06.18-6';   // bump every deploy; shown in footer so you can confirm what's live
 
 // Built-in snapshot so the app always renders, even with no network / in a
 // sandboxed preview. Live sync layers fresher data on top when available.
@@ -923,6 +931,7 @@ let openMatchKey=null;
 let POLY_MATCH=load('wc26_polymatch',{}); // per-match 3-way market odds, keyed by mkey
 let PM_WC_TAG=load('wc26_pmtag',null);    // discovered Polymarket World Cup tag id
 let PM_WINNER_EVENT=null;                  // cached winner event (resolved via PM_WINNER_SLUGS)
+let POLY_DIAG='';                          // last odds-fetch diagnostic, surfaced in the UI when odds are empty
 function isFave(c){ return FAVES.includes(c); }
 function toggleFave(c){ if(!c) return; const i=FAVES.indexOf(c); if(i>=0)FAVES.splice(i,1); else FAVES.push(c); save('wc26_faves',FAVES); }
 function parseEspnSummary(j){
@@ -1067,8 +1076,13 @@ async function sync(){
   // Live odds — fetch independently so a market hiccup never blocks results
   try{
     const ev=await fetchPolyWinner();
-    if(ev){ const parsed=parsePolymarket([ev]); if(parsed && parsed.live.length){ POLY=parsed; save('wc26_poly',POLY); renderMarket(); } }
-  }catch(e){ /* keep cached POLY if present */ }
+    if(ev){
+      const parsed=parsePolymarket([ev]);
+      if(parsed && parsed.live.length){ POLY=parsed; save('wc26_poly',POLY); POLY_DIAG=''; }
+      else { POLY_DIAG='feed returned 0 active team markets'; }
+    }
+    renderMarket();
+  }catch(e){ POLY_DIAG='odds error: '+(e&&e.message||e); renderMarket(); }
   // Per-match 3-way odds (Polymarket) — independent; falls back to model if unavailable
   fetchMatchMarkets().then(ok=>{ if(ok) refreshOpenMatch(); }).catch(()=>{});
   // Live in-progress scores (ESPN) — independent, never blocks core
@@ -1525,7 +1539,8 @@ function renderR32(matches){
 function renderMarket(){
   const el=document.getElementById('market'); if(!el) return;
   if(!POLY||!POLY.live||!POLY.live.length){
-    el.innerHTML=`<div style="color:var(--faint);font-size:13px;padding:20px 0">Live odds haven’t loaded yet. Tap <b style="color:var(--gold)">↻ Refresh</b>. If it keeps failing, Polymarket’s feed may be briefly unreachable — match results above are unaffected.</div>`;
+    const diag = POLY_DIAG ? `<div style="color:var(--lose);font-size:11px;margin-top:10px;font-family:var(--mono)">diagnostic: ${POLY_DIAG}</div>` : '';
+    el.innerHTML=`<div style="color:var(--faint);font-size:13px;padding:20px 0">Live odds haven’t loaded yet. Tap <b style="color:var(--gold)">↻ Refresh</b>. If it keeps failing, Polymarket’s feed may be briefly unreachable — match results above are unaffected.</div>${diag}`;
     return;
   }
   const meta=document.getElementById('market-meta');
@@ -2011,10 +2026,11 @@ function renderFooter(){
   const src=SOURCES[prefs.src||'openfootball'];
   document.getElementById('foot').innerHTML=
     `Results: <a href="${src.url}" target="_blank" rel="noopener">openfootball/worldcup.json</a> — free, public-domain, updated roughly daily. `+
-    `Live odds: <a href="https://polymarket.com/event/world-cup-winner" target="_blank" rel="noopener">Polymarket</a> — real-money prediction market, keyless public API, updates continuously. `+
+    `Live odds: <a href="https://polymarket.com/event/2026-fifa-world-cup-winner-595" target="_blank" rel="noopener">Polymarket</a> — real-money prediction market, keyless public API, updates continuously. `+
     `Standings use official FIFA group tiebreakers (points → goal difference → goals scored → head-to-head → FIFA ranking). `+
     `The 8 best third-placed teams and their Round-of-32 slotting follow FIFA's combination table; this tool computes a valid assignment that may differ from FIFA's official chart in rare edge cases. `+
-    `Manual results override the feed and stay on this device. Not affiliated with FIFA or Polymarket.`;
+    `Manual results override the feed and stay on this device. Not affiliated with FIFA or Polymarket. `+
+    `<span style="color:var(--line)">·</span> <span style="font-family:var(--mono);color:var(--line)">build ${BUILD}</span>`;
 }
 
 document.getElementById('stats-seg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
@@ -2207,20 +2223,29 @@ function parsePolymarketMatches(events){
 }
 // Resolve the Polymarket "World Cup winner" event across possible slugs, validate it's the real one, cache it.
 async function fetchPolyWinner(){
+  let reason='';
   for(const slug of PM_WINNER_SLUGS){
-    try{
-      const r=await fetch(POLY_EVENT_BASE+slug+'&t='+Date.now(),{cache:'no-store'});
-      if(!r.ok) continue;
-      const j=await r.json();
-      const cand=Array.isArray(j)? j : (j&&j.markets? [j] : []);
-      for(const ev of cand){
-        if(!ev||!ev.markets||!ev.markets.length) continue;
-        const teamMkts=ev.markets.filter(m=>NAME2CODE[(m.groupItemTitle||m.question||'').trim()]);
-        if(teamMkts.length>=10){ PM_WINNER_EVENT=ev; return ev; }   // looks like the 48-team winner market
-      }
-    }catch(e){}
+    const urls=[POLY_EVENT_BASE+slug+'&t='+Date.now(),
+                'https://gamma-api.polymarket.com/events/slug/'+slug+'?t='+Date.now()];   // query- and path-style
+    for(const url of urls){
+      try{
+        const r=await fetch(url,{cache:'no-store'});
+        if(!r.ok){ reason='HTTP '+r.status+' · '+slug; continue; }
+        const j=await r.json();
+        const cand=Array.isArray(j)? j : (j&&j.markets? [j] : (j&&Array.isArray(j.data)? j.data : []));
+        for(const ev of cand){
+          if(!ev||!ev.markets||!ev.markets.length) continue;
+          const teamMkts=ev.markets.filter(m=>NAME2CODE[(m.groupItemTitle||m.question||'').trim()]);
+          const looksWC=/world\s*cup\s*winner/i.test(ev.title||'') || /world-cup-winner|fifa-world-cup-winner/i.test(ev.slug||'');
+          if(teamMkts.length>=8 || (looksWC && teamMkts.length>=4)){ PM_WINNER_EVENT=ev; POLY_DIAG=''; return ev; }
+          reason='found event, only '+teamMkts.length+' known teams · '+slug;
+        }
+        if(!cand.length) reason='empty response · '+slug;
+      }catch(e){ reason='blocked (network/CORS) · '+slug; }
+    }
   }
-  return PM_WINNER_EVENT; // fall back to a previously resolved event if this refresh failed
+  POLY_DIAG=reason||'no response from Polymarket';
+  return PM_WINNER_EVENT;   // last good event if a refresh fails, else null
 }
 async function discoverWcTag(){
   if(PM_WC_TAG) return PM_WC_TAG;
