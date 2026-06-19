@@ -166,6 +166,8 @@
   .seg{display:inline-flex; background:var(--panel); border:1px solid var(--line); border-radius:9px; overflow:hidden}
   .seg button{background:transparent; border:0; color:var(--muted); padding:8px 15px; font-size:13px; font-weight:600}
   .seg button.on{background:var(--gold); color:#1a1408}
+  #bracket-seg{display:flex; width:100%}
+  #bracket-seg button{flex:1; padding:9px 4px; font-size:12px; white-space:nowrap; text-align:center}
   .toggle{display:inline-flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted); user-select:none}
   .switch{width:38px;height:21px;border-radius:11px;background:var(--panel2);border:1px solid var(--line);position:relative;transition:.2s}
   .switch.on{background:var(--gold);border-color:var(--gold)}
@@ -296,6 +298,96 @@
   .bkt-slot .bkt-code{margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted); padding-left:6px}
   .bkt-hint{font-size:11px; color:var(--faint); margin:2px 0 10px; display:flex; align-items:center; gap:8px}
   .bkt-bronze-tag{position:absolute; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:#cd9b5a}
+
+  /* ===== GROUP-ORDER PREDICTION EDITOR ===== */
+  .pred-panel{background:linear-gradient(160deg,rgba(212,175,55,.07),rgba(20,20,26,.5)); border:1px solid var(--gold-dim); border-radius:16px; padding:14px 14px 16px; margin-bottom:14px}
+  .pred-head{display:flex; align-items:flex-start; justify-content:space-between; gap:12px}
+  .pred-head-tx{min-width:0}
+  .pred-title{font-family:'Bebas Neue',sans-serif; font-size:21px; letter-spacing:.02em; color:var(--gold); line-height:1}
+  .pred-sub{font-size:11.5px; color:var(--muted); margin-top:5px; line-height:1.45}
+  .pred-toggle{flex:0 0 auto; background:rgba(212,175,55,.12); border:1px solid var(--gold-dim); color:var(--gold); font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.04em; padding:6px 10px; border-radius:9px; cursor:pointer}
+  .pred-start{display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-top:13px}
+  .pred-start-lbl{font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--faint)}
+  .pred-sb{background:var(--panel2); border:1px solid var(--line); color:var(--txt); font-size:11.5px; padding:6px 11px; border-radius:8px; cursor:pointer; transition:.15s}
+  .pred-sb:active{transform:scale(.96)}
+  .pred-sb:hover{border-color:var(--gold-dim); color:var(--gold)}
+  .pred-groups{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:9px; margin-top:13px}
+  .pred-g{background:rgba(10,10,14,.5); border:1px solid var(--line); border-radius:11px; padding:7px 8px 8px}
+  .pred-g-h{font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); padding:1px 2px 6px}
+  .pred-row{display:flex; align-items:center; gap:7px; padding:5px 4px; border-radius:7px}
+  .pred-row+.pred-row{margin-top:1px}
+  .pred-row.qual{background:rgba(212,175,55,.06)}
+  .pred-row.third{background:rgba(120,150,255,.05)}
+  .pred-pos{flex:0 0 16px; text-align:center; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--faint)}
+  .pred-flag{flex:0 0 auto; font-size:16px; line-height:1}
+  .pred-name{flex:1 1 auto; min-width:0; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .pred-q{flex:0 0 auto; font-size:10px; color:var(--gold)}
+  .pred-q.out{color:transparent}
+  .pred-adv{flex:0 0 auto; font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:.08em; text-transform:uppercase; padding:2px 5px; border-radius:5px; background:rgba(120,150,255,.14); color:#9db0ff}
+  .pred-adv.on{background:rgba(212,175,55,.18); color:var(--gold)}
+  .pred-ar{flex:0 0 auto; display:flex; gap:3px}
+  .pred-mv{width:24px; height:24px; display:flex; align-items:center; justify-content:center; background:var(--panel2); border:1px solid var(--line); color:var(--txt); border-radius:6px; font-size:9px; cursor:pointer; padding:0; line-height:1; transition:.12s}
+  .pred-mv:active:not(:disabled){transform:scale(.88); background:rgba(212,175,55,.18)}
+  .pred-mv:disabled{opacity:.25; cursor:default}
+
+  /* ===== PREDICTION POOL ===== */
+  .pool-hero{background:linear-gradient(160deg,rgba(212,175,55,.10),rgba(20,20,26,.5)); border:1px solid var(--gold-dim); border-radius:16px; padding:18px; margin-bottom:16px}
+  .pool-title{font-family:'Bebas Neue',sans-serif; font-size:27px; letter-spacing:.02em; color:var(--gold); line-height:1}
+  .pool-sub{font-size:13px; color:var(--muted); margin-top:7px; line-height:1.5}
+  .pool-form{display:flex; flex-direction:column; gap:7px}
+  .pool-l{font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin-top:8px}
+  .pool-dim{color:var(--faint); text-transform:none; letter-spacing:0; font-size:10px}
+  .pool-in{background:var(--panel); border:1px solid var(--line); color:var(--txt); border-radius:10px; padding:12px 13px; font-size:15px; font-family:inherit}
+  .pool-in:focus{outline:none; border-color:var(--gold-dim)}
+  .pool-join{margin-top:14px; width:100%; justify-content:center; padding:13px}
+  .pool-note{font-size:11.5px; color:var(--faint); margin-top:10px; line-height:1.5}
+  .pool-link{background:none; border:0; color:var(--gold); font-size:12.5px; cursor:pointer; padding:8px 0; text-align:left; font-family:inherit}
+  .pool-top{display:flex; align-items:center; gap:12px; margin-bottom:14px}
+  .pool-grp{display:flex; flex-direction:column}
+  .pool-grp-k{font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.18em; color:var(--faint)}
+  .pool-grp-v{font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:.04em; color:var(--txt); line-height:1}
+  .pool-meta{flex:1}
+  .pool-live{display:inline-flex; align-items:center; gap:7px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--live)}
+  .pool-off{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--faint)}
+  .pool-warn{background:var(--lose-dim); border:1px solid rgba(229,83,75,.3); color:#f3b0ab; border-radius:10px; padding:10px 12px; font-size:12px; margin-bottom:12px}
+  .pool-me{background:linear-gradient(150deg,var(--panel),var(--bg2)); border:1px solid var(--gold-dim); border-radius:16px; padding:14px; margin-bottom:18px}
+  .pm-row{display:flex; align-items:center; gap:13px}
+  .pm-rank{font-family:'Bebas Neue',sans-serif; font-size:30px; color:var(--gold); min-width:42px; text-align:center; line-height:1}
+  .pm-mid{flex:1; min-width:0}
+  .pm-name{font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px}
+  .pm-you{font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:#1a1408; background:var(--gold); padding:2px 6px; border-radius:5px}
+  .pm-sub{font-size:12.5px; color:var(--muted); margin-top:3px; display:flex; align-items:center; gap:6px}
+  .pm-sub .flag{font-size:15px}
+  .pm-score{font-family:'Bebas Neue',sans-serif; font-size:34px; color:var(--txt); line-height:1}
+  .pm-pts{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--faint); margin-left:3px}
+  .pm-actions{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:14px}
+  .pool-act{justify-content:center; padding:11px 8px; font-size:13px}
+  .pm-flag{font-size:11.5px; color:var(--gold); margin-top:11px; line-height:1.5; background:rgba(212,175,55,.08); border-radius:8px; padding:8px 10px}
+  .pool-board-h{font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin:0 2px 9px}
+  .pool-board{display:flex; flex-direction:column; gap:7px}
+  .lb-row{background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; transition:border-color .15s}
+  .lb-row.me{border-color:var(--gold-dim); background:linear-gradient(150deg,rgba(212,175,55,.07),var(--panel))}
+  .lb-main{display:flex; align-items:center; gap:11px; padding:11px 13px; cursor:pointer}
+  .lb-rank{font-family:'Bebas Neue',sans-serif; font-size:22px; color:var(--muted); min-width:26px; text-align:center}
+  .lb-row.me .lb-rank{color:var(--gold)}
+  .lb-name{flex:1; min-width:0; font-size:14.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .lb-src{font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); font-weight:400; margin-top:1px}
+  .lb-src:empty{display:none}
+  .lb-champ{flex:0 0 auto; display:flex; align-items:center; gap:3px; font-size:17px}
+  .lb-ok{color:var(--win); font-size:12px}
+  .pc-none{color:var(--faint); font-size:13px}
+  .lb-score{font-family:'Bebas Neue',sans-serif; font-size:24px; color:var(--txt); min-width:42px; text-align:right}
+  .lb-exp{color:var(--faint); font-size:11px; width:14px; text-align:center}
+  .lb-detail{max-height:0; overflow:hidden; transition:max-height .22s ease}
+  .lb-row.open .lb-detail{max-height:120px}
+  .lb-bd{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; padding:0 13px 12px}
+  .bd-c{background:var(--bg2); border:1px solid var(--line); border-radius:8px; padding:6px 2px; text-align:center}
+  .bd-k{font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:.04em; text-transform:uppercase; color:var(--faint)}
+  .bd-v{font-family:'Bebas Neue',sans-serif; font-size:18px; color:var(--gold); margin-top:1px; line-height:1}
+  .pool-key{font-size:11px; color:var(--faint); line-height:1.6; margin-top:16px; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:11px 13px}
+  .pool-key b{color:var(--muted)}
+  .wc-toast{position:fixed; left:50%; bottom:calc(80px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(8px); background:#1c1c24; border:1px solid var(--gold-dim); color:var(--txt); font-size:13px; padding:11px 16px; border-radius:12px; z-index:200; opacity:0; pointer-events:none; transition:.25s; max-width:88%; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.5)}
+  .wc-toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
 
   /* ===== FORECAST ===== */
   .fc-controls{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:18px}
@@ -436,22 +528,27 @@
   .xi-mini{padding:3px 0; font-size:13px}
   .gcol.r .xi-mini{display:flex; flex-direction:row-reverse; gap:6px; justify-content:flex-start}
   .xi-form2{font-family:'Bebas Neue',sans-serif; color:var(--gold); font-size:16px; letter-spacing:.06em; margin-bottom:4px}
-  .ms-row{display:flex; justify-content:space-between; align-items:center; margin-top:12px}
-  .ms-l{color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase}
-  .ms-v{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:14px}
-  .ms-bar{display:flex; height:5px; border-radius:3px; overflow:hidden; margin-top:4px; gap:2px}
-  .ms-fill{height:100%}
-  .ms-fill.l{background:var(--gold)}
-  .ms-fill.r{background:var(--panel2)}
+  .ms-row{display:flex; justify-content:space-between; align-items:baseline; margin-top:16px}
+  .ms-l{color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.12em; text-transform:uppercase}
+  .ms-v{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:15px; color:var(--faint); transition:color .25s}
+  .ms-v.l.lead{color:var(--gold)} .ms-v.r.lead{color:#8ca5ff}
+  .ms-bar{display:flex; height:6px; border-radius:4px; overflow:hidden; margin-top:7px; gap:3px; background:rgba(255,255,255,.025)}
+  .ms-fill{height:100%; border-radius:3px; transition:width .4s cubic-bezier(.4,0,.2,1)}
+  .ms-fill.l{background:linear-gradient(90deg,#c89f2e,#edcb5e)}
+  .ms-fill.r{background:linear-gradient(90deg,#5876ee,#8ca5ff)}
   .tc-fav{background:none; border:1px solid var(--gold-dim); color:var(--gold); border-radius:20px; padding:7px 16px; font-size:13px; font-weight:600; margin-bottom:6px; cursor:pointer}
   .tc-fav.on{background:var(--gold); color:#1a1408; border-color:var(--gold)}
-  .mt-row{display:flex; align-items:center; gap:11px; padding:11px 0; border-bottom:1px solid var(--line2); cursor:pointer}
+  .mt-row{display:flex; align-items:center; gap:11px; padding:11px 0; border-bottom:1px solid var(--line2)}
+  .mt-main{display:flex; align-items:center; gap:11px; flex:1; min-width:0; cursor:pointer; -webkit-tap-highlight-color:transparent}
+  .mt-main:active{opacity:.65}
   .mt-row .flag{font-size:26px}
   .mt-info{flex:1; min-width:0}
   .mt-nm{font-weight:600; font-size:15px}
   .mt-sub{font-size:11px; color:var(--faint); font-family:'JetBrains Mono',monospace}
   .mt-live{color:var(--live); font-weight:700; font-family:'JetBrains Mono',monospace; font-size:12px; white-space:nowrap}
   .mt-next{color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:12px; text-align:right; white-space:nowrap}
+  .mt-next.mrow::after{content:'\203a'; margin-left:7px; color:var(--faint)}
+  .mt-next.mrow:active,.mt-live.mrow:active{color:var(--gold)}
   .mt-done{color:var(--faint); font-family:'JetBrains Mono',monospace; font-size:11px}
   .mt-empty{font-size:12px; color:var(--muted); line-height:1.6; background:var(--panel); border:1px solid var(--line2); border-radius:10px; padding:13px}
   .fx.fav{border-left:3px solid var(--gold)}
@@ -467,10 +564,18 @@
   .ra-mark{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--faint)}
   .ra-step.ra-real .ra-mark{color:var(--win)}
   .ra-champ{font-family:'Bebas Neue',sans-serif; color:var(--gold); font-size:18px; margin-top:10px; text-align:center; letter-spacing:.04em}
-  .wp-bar{display:flex; height:32px; border-radius:8px; overflow:hidden; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700}
-  .wp-seg{display:flex; align-items:center; justify-content:center; color:#0a0a0c; min-width:26px; overflow:hidden}
-  .wp-1{background:var(--gold)} .wp-d{background:var(--panel2); color:var(--muted)} .wp-2{background:#6c8cff}
-  .wp-lbl{display:flex; justify-content:space-between; font-size:10px; color:var(--faint); font-family:'JetBrains Mono',monospace; margin-top:5px}
+  .wp-bar{display:flex; height:15px; border-radius:8px; overflow:hidden; box-shadow:inset 0 1px 3px rgba(0,0,0,.4)}
+  .wp-seg{height:100%; min-width:2px; transition:flex-grow .4s cubic-bezier(.4,0,.2,1)}
+  .wp-seg+.wp-seg{box-shadow:-1px 0 0 rgba(10,10,12,.55)}
+  .wp-1{background:linear-gradient(180deg,#edcb5e,#c89f2e)}
+  .wp-d{background:linear-gradient(180deg,#3c3c46,#2a2a32)}
+  .wp-2{background:linear-gradient(180deg,#8ca5ff,#5876ee)}
+  .wp-lbl{display:flex; justify-content:space-between; margin-top:9px; gap:8px}
+  .wp-col{display:flex; flex-direction:column; gap:1px; min-width:0; flex:1}
+  .wp-col.c{align-items:center} .wp-col.r{align-items:flex-end; text-align:right}
+  .wp-nm{font-size:9px; letter-spacing:.05em; text-transform:uppercase; color:var(--faint); font-family:'JetBrains Mono',monospace; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .wp-pct{font-family:'Bebas Neue',sans-serif; font-size:23px; line-height:.95; letter-spacing:.02em}
+  .wp-col.l .wp-pct{color:var(--gold)} .wp-col.c .wp-pct{color:var(--muted)} .wp-col.r .wp-pct{color:#88a1ff}
   .cm-row{display:flex; gap:10px; padding:7px 0; border-bottom:1px solid var(--line2); font-size:12.5px}
   .cm-min{font-family:'JetBrains Mono',monospace; color:var(--gold); font-size:11px; min-width:32px; flex-shrink:0}
   .cm-ic{flex-shrink:0}
@@ -495,6 +600,12 @@
   .pl-tile{background:var(--panel); border:1px solid var(--line2); border-radius:10px; padding:13px 4px; text-align:center}
   .pl-tile .pv{font-family:'Bebas Neue',sans-serif; font-size:30px; color:var(--gold); line-height:1}
   .pl-tile .pk2{font-size:9px; color:var(--faint); margin-top:4px; text-transform:uppercase; letter-spacing:.08em}
+  .fbref-btn{display:flex; align-items:center; justify-content:center; gap:8px; margin-top:16px; padding:12px; border-radius:11px; text-decoration:none;
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; font-weight:600; color:var(--gold);
+    background:linear-gradient(135deg, rgba(212,175,55,.14), rgba(212,175,55,.04)); border:1px solid rgba(212,175,55,.32); transition:.15s}
+  .fbref-btn:active{background:rgba(212,175,55,.26)}
+  .fbref-btn .arr{font-size:13px}
+  .fbref-cap{text-align:center; font-size:10px; color:var(--faint); margin-top:7px}
   .search-card{background:var(--bg2); border:1px solid var(--line); border-radius:16px; width:100%; max-width:520px; max-height:80vh; overflow:auto; padding:14px}
   .search-bar{display:flex; gap:8px; align-items:center; margin-bottom:6px}
   .search-bar input{flex:1; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px; color:var(--txt); font-size:16px; font-family:inherit; outline:none}
@@ -593,9 +704,10 @@
     <div class="sec-head"><h2>Bracket</h2><span class="meta" id="r32-meta">fills automatically as groups decide</span></div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
       <div class="seg" id="bracket-seg">
-        <button data-m="decide" class="on">As groups decide</button>
-        <button data-m="project">Project · odds</button>
-        <button data-m="pick">Pick your own</button>
+        <button data-m="decide" class="on">As decided</button>
+        <button data-m="project">Current</button>
+        <button data-m="predict">Predicted</button>
+        <button data-m="pick">Pick</button>
       </div>
       <span id="pick-progress" class="hide" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)"></span>
       <button class="btn hide" id="clear-picks" style="margin-left:auto">Clear picks</button>
@@ -643,6 +755,11 @@
     <div id="forecast"></div>
   </section>
 
+  <section id="sec-pool" class="hide">
+    <div class="sec-head"><h2>Prediction Pool</h2><span class="meta" id="pool-meta">live leaderboard · scored against real results</span></div>
+    <div id="view-pool"></div>
+  </section>
+
   <footer id="foot"></footer>
 </div>
 
@@ -652,6 +769,7 @@
   <button data-tab="standings"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h10M4 12h16M4 17h7"/></svg></span><span class="lb">Standings</span></button>
   <button data-tab="bracket"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5 4v5a3 3 0 0 0 3 3h8a3 3 0 0 1 3 3v5M5 20v-5a3 3 0 0 1 3-3"/></svg></span><span class="lb">Bracket</span></button>
   <button data-tab="forecast"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 15l5-5 4 3 7-8"/><path d="M20 9V5h-4"/></svg></span><span class="lb">Forecast</span></button>
+  <button data-tab="pool"><span class="ic"><svg viewBox="0 0 24 24"><path d="M6 4h12v3a6 6 0 0 1-12 0V4z"/><path d="M6 6H4v1a3 3 0 0 0 3 3M18 6h2v1a3 3 0 0 1-3 3"/><path d="M9 16h6M10 20h4M12 13v3"/></svg></span><span class="lb">Pool</span></button>
 </nav>
 
 <!-- SETTINGS SHEET -->
@@ -708,7 +826,7 @@ const SOURCES = {
 // Polymarket re-slugs events over time; try the current slug first, then fall back.
 const PM_WINNER_SLUGS = ['world-cup-winner','2026-fifa-world-cup-winner-595','2026-fifa-world-cup-winner'];
 const POLY_EVENT_BASE = 'https://gamma-api.polymarket.com/events?slug=';
-const BUILD = '2026.06.18-14';   // bump every deploy; shown in footer so you can confirm what's live
+const BUILD = '2026.06.18-20';   // bump every deploy; shown in footer so you can confirm what's live
 
 // Built-in snapshot so the app always renders, even with no network / in a
 // sandboxed preview. Live sync layers fresher data on top when available.
@@ -850,6 +968,39 @@ function computeStandings(matches){
   return tables;
 }
 
+// Projected final group standings: real played results + EXPECTED points/goals for
+// unplayed group matches, using winProb (market-primed or model) and matchXG.
+// Expected points = 3·P(win) + 1·P(draw); expected goals fold into GF/GA for the GD tiebreaker.
+function projectedStandings(matches){
+  const groups={}, meta={};
+  for(const m of matches){
+    if(!m.group||!m.t1||!m.t2) continue;
+    const g=m.group; groups[g]??={}; meta[g]??={total:0,done:0};
+    meta[g].total++; if(m.played) meta[g].done++;
+    for(const c of [m.t1,m.t2]) groups[g][c]??={code:c,P:0,W:0,D:0,L:0,GF:0,GA:0,Pts:0,proj:false};
+    const a=groups[g][m.t1], b=groups[g][m.t2];
+    a.P++; b.P++;
+    if(m.played){
+      a.GF+=m.s1; a.GA+=m.s2; b.GF+=m.s2; b.GA+=m.s1;
+      if(m.s1>m.s2){a.W++;a.Pts+=3;b.L++;}
+      else if(m.s1<m.s2){b.W++;b.Pts+=3;a.L++;}
+      else{a.D++;b.D++;a.Pts++;b.Pts++;}
+    } else {
+      const wp=winProb(m), xg=matchXG(m);
+      a.Pts += 3*wp.p1 + wp.pd;  b.Pts += 3*wp.p2 + wp.pd;
+      a.GF += xg.xg1; a.GA += xg.xg2;  b.GF += xg.xg2; b.GA += xg.xg1;
+      a.proj=true; b.proj=true;
+    }
+  }
+  const tables={};
+  for(const g in groups){
+    const arr=Object.values(groups[g]).map(x=>({...x, GF:Math.round(x.GF*10)/10, GA:Math.round(x.GA*10)/10, GD:Math.round((x.GF-x.GA)*10)/10, Pts:Math.round(x.Pts*100)/100}));
+    arr.sort((x,y)=> y.Pts-x.Pts || y.GD-x.GD || y.GF-x.GF || rankOf(x.code)-rankOf(y.code));
+    tables[g]={rows:arr, done:meta[g].done, total:meta[g].total, complete: meta[g].total>0 && meta[g].done===meta[g].total, projected: meta[g].done<meta[g].total};
+  }
+  return tables;
+}
+
 // ---- BEST-3RD RANKING + R32 ASSIGNMENT ----
 function bestThirds(tables){
   const thirds=[];
@@ -886,7 +1037,9 @@ function assignThirds(qualifiedGroups){
 let RAW=[];            // normalized matches
 let POLY=load('wc26_poly',null);  // polymarket live odds
 let userPicks=load('wc26_userpicks',{}); // user's manual bracket: matchNum -> winner code
+let userGroupOrder=load('wc26_grouporder',{}); // user's predicted group finishes: { A:['MEX','KOR','CZE','RSA'], ... }
 let _bktScroll=null; // remembers bracket pan position across pick re-renders
+let _pickScroll=null; // remembers page scroll across prediction re-renders
 let TABLES={};         // standings
 let prefs=load('wc26_prefs',{auto:false,pred:true,view:'groups',md:'all'});
 let lastSync=load('wc26_sync',null);
@@ -1221,12 +1374,12 @@ function renderToday(){
       const lv=tms.find(m=>m.live);
       const nx=tms.filter(m=>!m.played).sort(byKickoff)[0];
       let st;
-      if(lv){ st=`<span class="mt-live">● ${lv.liveClock||'LIVE'} ${lv.s1}–${lv.s2}</span>`; }
-      else if(nx){ const opp=nx.t1===code?nx.t2:nx.t1; const oppN=TEAMS[opp]?TEAMS[opp][0]:(nx.t1===code?(nx.raw2||nx.slot2||'TBD'):(nx.raw1||nx.slot1||'TBD')); const dd=dayDiff(nx.date); const when=dd===0?(fmtTime(nx)||'today'):dd===1?'tmrw':dd+'d'; st=`<span class="mt-next">vs ${oppN} · ${when}</span>`; }
+      if(lv){ st=`<span class="mt-live mrow" data-mkey="${mkey(lv)}">● ${lv.liveClock||'LIVE'} ${lv.s1}–${lv.s2}</span>`; }
+      else if(nx){ const opp=nx.t1===code?nx.t2:nx.t1; const oppN=TEAMS[opp]?TEAMS[opp][0]:(nx.t1===code?(nx.raw2||nx.slot2||'TBD'):(nx.raw1||nx.slot1||'TBD')); const dd=dayDiff(nx.date); const when=dd===0?(fmtTime(nx)||'today'):dd===1?'tmrw':dd+'d'; st=`<span class="mt-next mrow" data-mkey="${mkey(nx)}">vs ${oppN} · ${when}</span>`; }
       else { st=`<span class="mt-done">advanced/out</span>`; }
       const _q=qualScenario(code); const _qs=_q?({through:'✓ through',alive:'still alive',third:'3rd-place race',out:'eliminated'}[_q.status]||''):'';
       const sub=(g&&row)?`${pos}${pos===1?'st':pos===2?'nd':pos===3?'rd':'th'} · ${row.Pts}pt${_qs?' · '+_qs:''}`:(nx?nx.round:'');
-      return `<div class="mt-row tlink" data-team="${code}"><span class="flag">${t[1]}</span><div class="mt-info"><div class="mt-nm">${t[0]}</div><div class="mt-sub">${sub}</div></div>${st}</div>`;
+      return `<div class="mt-row"><div class="mt-main tlink" data-team="${code}"><span class="flag">${t[1]}</span><div class="mt-info"><div class="mt-nm">${t[0]}</div><div class="mt-sub">${sub}</div></div></div>${st}</div>`;
     }).join('')+`</div>`;
   } else {
     html+=`<div class="td-sec"><div class="h">My Teams</div><div class="mt-empty">⭐ Open any team and tap <b>Follow</b> to track them here — next match, live score, group position.</div></div>`;
@@ -1441,17 +1594,288 @@ function pickWinner(a,b){
   return rankOf(a)<=rankOf(b)?a:b;  // deterministic tiebreak
 }
 
+// ===== PREDICTION SCORING + SHARE CODES + POOL =====
+// Tunable point weights — all surfaced in the Pool tab so the scheme is legible.
+const SCORING={ groupExact:3, r16:4, qf:8, sf:15, final:30, champ:60, bronze:15 };
+const R32_NUMS=[73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88];
+const R16_NUMS=[89,90,91,92,93,94,95,96];
+const QF_NUMS=[97,98,99,100];
+const SF_NUMS=[101,102];
+
+function groupsList(matches){ return [...new Set(matches.filter(m=>m.group).map(m=>m.group))].sort(); }
+
+// real knockout winners from played matches (nums 73–104)
+function koRealWinners(matches){
+  const w={};
+  matches.forEach(m=>{ if(m.num&&m.num>=73&&m.num<=104&&m.played&&m.t1&&m.t2){ w[m.num]= m.s1>m.s2?m.t1:(m.s2>m.s1?m.t2:m.t1); }});
+  // bronze fallback if the 3rd-place game isn't numbered 103 in the feed
+  if(!w[103]){ const b=matches.find(x=>x.played&&x.t1&&x.t2&&/third|3rd/i.test(x.round||'')); if(b) w[103]= b.s1>b.s2?b.t1:(b.s2>b.s1?b.t2:b.t1); }
+  return w;
+}
+// the actual outcomes a prediction is graded against
+function realAdvancement(matches){
+  const w=koRealWinners(matches);
+  const setOf=nums=>{ const s=new Set(); nums.forEach(n=>{ if(w[n]) s.add(w[n]); }); return s; };
+  const tables=computeStandings(matches);
+  const groupsFinal={};
+  for(const g in tables) groupsFinal[g]= tables[g].complete ? tables[g].rows.map(r=>r.code) : null;
+  return { r16:setOf(R32_NUMS), qf:setOf(R16_NUMS), sf:setOf(QF_NUMS), final:setOf(SF_NUMS),
+    champ:w[104]||null, bronze:w[103]||null, groupsFinal, anyKO:Object.keys(w).length>0 };
+}
+// teams a prediction sends to each round
+function predAdvancement(pred){
+  const k=pred.koWinners||{};
+  const byNum=n=> n===103 ? (k[103]||k.bronze||null) : (k[n]||null);
+  const setOf=nums=>{ const s=new Set(); nums.forEach(n=>{ const c=byNum(n); if(c) s.add(c); }); return s; };
+  return { r16:setOf(R32_NUMS), qf:setOf(R16_NUMS), sf:setOf(QF_NUMS), final:setOf(SF_NUMS),
+    champ:byNum(104), bronze:byNum(103) };
+}
+// score one prediction against the live outcomes — advancement-based, escalating by round
+function scorePrediction(pred, real){
+  const p=predAdvancement(pred);
+  const inter=(a,b)=>{ let n=0; a.forEach(x=>{ if(b.has(x)) n++; }); return n; };
+  let group=0, groupHits=0; const go=pred.groupOrders||{};
+  for(const g in real.groupsFinal){ const rf=real.groupsFinal[g], pf=go[g];
+    if(rf&&pf) for(let i=0;i<rf.length;i++) if(pf[i]&&pf[i]===rf[i]){ group+=SCORING.groupExact; groupHits++; } }
+  const hits={ r16:inter(p.r16,real.r16), qf:inter(p.qf,real.qf), sf:inter(p.sf,real.sf), final:inter(p.final,real.final),
+    champ:(p.champ&&p.champ===real.champ)?1:0, bronze:(p.bronze&&p.bronze===real.bronze)?1:0, group:groupHits };
+  const parts={ group, r16:hits.r16*SCORING.r16, qf:hits.qf*SCORING.qf, sf:hits.sf*SCORING.sf,
+    final:hits.final*SCORING.final, champ:hits.champ*SCORING.champ, bronze:hits.bronze*SCORING.bronze };
+  const total=parts.group+parts.r16+parts.qf+parts.sf+parts.final+parts.champ+parts.bronze;
+  return { total, parts, hits, champ:p.champ };
+}
+
+// ---- compact share code (≈90 chars): direct team-index encoding, no bracket reconstruction ----
+const B64='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+function teamCodec(matches){
+  const set=new Set(); matches.forEach(m=>{ if(m.group){ if(m.t1)set.add(m.t1); if(m.t2)set.add(m.t2); }});
+  const codes=[...set].sort(); const toIdx={}; codes.forEach((c,i)=>toIdx[c]=i); return {codes,toIdx};
+}
+function encodePrediction(pred, matches){
+  const {toIdx}=teamCodec(matches), groups=groupsList(matches);
+  const ch=c=>{ const i=(c!=null)?toIdx[c]:undefined; return (i==null)?'_':B64[i]; };
+  let s=''; for(const g of groups){ const o=(pred.groupOrders&&pred.groupOrders[g])||[]; for(let i=0;i<4;i++) s+=ch(o[i]); }
+  const k=pred.koWinners||{}; for(let n=73;n<=104;n++){ const c=(n===103)?(k[103]||k.bronze):k[n]; s+=ch(c); }
+  return 'W26-1.'+s+'~'+encodeURIComponent((pred.name||'').slice(0,40));
+}
+function decodePrediction(str, matches){
+  if(typeof str!=='string'||str.indexOf('W26-1.')!==0) return null;
+  const {codes}=teamCodec(matches), groups=groupsList(matches);
+  const body=str.slice(6), t=body.indexOf('~');
+  const payload=t>=0?body.slice(0,t):body, name=t>=0?safeDecode(body.slice(t+1)):'';
+  const code=c=>{ if(c==='_'||c==null) return null; const i=B64.indexOf(c); return (i<0||i>=codes.length)?null:codes[i]; };
+  let pos=0; const groupOrders={};
+  for(const g of groups){ const a=[]; for(let i=0;i<4;i++) a.push(code(payload[pos++])); groupOrders[g]=a; }
+  const koWinners={};
+  for(let n=73;n<=104;n++){ const c=code(payload[pos++]); if(c){ if(n===103) koWinners.bronze=c; else koWinners[n]=c; } }
+  return { name, groupOrders, koWinners };
+}
+function safeDecode(s){ try{ return decodeURIComponent(s); }catch(e){ return s; } }
+
+// the current user's prediction, ready to encode/submit
+function myPrediction(matches){
+  const groups=groupsList(matches), tables=computeStandings(matches), groupOrders={};
+  for(const g of groups){ const u=userGroupOrder[g], teams=tables[g]?tables[g].rows.map(r=>r.code):[];
+    groupOrders[g]=(u&&u.length===teams.length&&u.every(c=>teams.includes(c)))?u.slice():teams; }
+  const koWinners={}; for(const k in userPicks) koWinners[k]=userPicks[k];
+  return { groupOrders, koWinners, name:prefs.poolName||'' };
+}
+
+// ---- live shared leaderboard (Cloudflare Worker backend) ----
+const BOARD_URL='';  // ← paste your Worker URL here to enable the live shared board, e.g. https://wc26-pool.you.workers.dev
+function boardUrl(){ return ((prefs.boardUrl||BOARD_URL)||'').replace(/\/+$/,''); }
+async function poolSubmit(group,name,code){
+  const base=boardUrl(); if(!base) throw new Error('no server set');
+  const r=await fetch(base+'/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({group,name,code})});
+  if(!r.ok){ let e='submit failed'; try{e=(await r.json()).error||e;}catch(_){ } throw new Error(e); }
+  return r.json();
+}
+async function poolFetch(group){
+  const base=boardUrl(); if(!base) throw new Error('no server set');
+  const r=await fetch(base+'/group?id='+encodeURIComponent(group));
+  if(!r.ok) throw new Error('fetch failed ('+r.status+')');
+  return r.json();
+}
+function localBoard(){ return load('wc26_localboard',[]); }
+function addLocalCode(code, matches){
+  const d=decodePrediction(code,matches); if(!d) return false;
+  const arr=localBoard(), id=(d.name||'guest').toLowerCase();
+  const i=arr.findIndex(x=>(x.name||'').toLowerCase()===id), entry={name:d.name||'Guest',code,ts:Date.now()};
+  if(i>=0) arr[i]=entry; else arr.push(entry); save('wc26_localboard',arr); return true;
+}
+function copyText(t){ try{ if(navigator.clipboard&&navigator.clipboard.writeText) return navigator.clipboard.writeText(t); }catch(e){} 
+  const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} ta.remove(); return Promise.resolve(); }
+
+let _poolEntries=load('wc26_poolcache',null) ? (load('wc26_poolcache',null).entries||null) : null;
+let _poolErr=''; let _poolTimer=null; const _poolOpen=new Set();
+function poolStopPolling(){ if(_poolTimer){ clearInterval(_poolTimer); _poolTimer=null; } }
+function poolStartPolling(){ poolStopPolling(); if(!boardUrl()||!prefs.poolGroup) return; _poolTimer=setInterval(()=>{ if(prefs.tab==='pool') poolRefresh(true); }, 45000); }
+async function poolRefresh(silent){
+  if(boardUrl()&&prefs.poolGroup){
+    try{ const d=await poolFetch(prefs.poolGroup); _poolEntries=d.entries||[]; _poolErr=''; save('wc26_poolcache',{group:prefs.poolGroup,entries:_poolEntries,ts:Date.now()}); }
+    catch(e){ _poolErr=silent?'':e.message; }
+  }
+  renderPool();
+}
+
+// gather every entry (server + locally imported + your own), score and rank them
+function buildPoolEntries(matches){
+  const real=realAdvancement(matches);
+  const myName=(prefs.poolName||'You').trim()||'You', myId=myName.toLowerCase();
+  const myLive=encodePrediction(myPrediction(matches),matches);
+  const byName={};
+  (_poolEntries||[]).forEach(e=>{ if(e&&e.code) byName[(e.name||'guest').toLowerCase()]={name:e.name||'Guest',code:e.code,source:'server',ts:e.ts}; });
+  localBoard().forEach(e=>{ const id=(e.name||'guest').toLowerCase(); if(!byName[id]) byName[id]={name:e.name||'Guest',code:e.code,source:'local',ts:e.ts}; });
+  const submitted=!!byName[myId];
+  if(!byName[myId]) byName[myId]={name:myName,code:myLive,source:'you',ts:Date.now()};
+  byName[myId].me=true;
+  const unsaved = submitted && byName[myId].code!==myLive;
+  const list=Object.values(byName).map(e=>{ const dec=decodePrediction(e.code,matches); const sc=dec?scorePrediction(dec,real):{total:0,parts:{},hits:{},champ:null};
+    return {...e, score:sc.total, parts:sc.parts, hits:sc.hits, champ:sc.champ}; });
+  list.sort((a,b)=> b.score-a.score || (a.name||'').localeCompare(b.name||''));
+  list.forEach((e,i)=>e.rank=i+1);
+  return { list, real, myLive, submitted, unsaved, myName };
+}
+
+function poolPicksCount(){ let n=0; for(const k of [...R32_NUMS,...R16_NUMS,...QF_NUMS,...SF_NUMS,104]) if(userPicks[k]) n++; if(userPicks.bronze) n++; return n; }
+
+function renderPool(){
+  const host=document.getElementById('view-pool'); if(!host) return;
+  const matches=applyOverrides(RAW);
+  const joined = !!(prefs.poolGroup && prefs.poolName);
+  const live = !!boardUrl();
+  let html='';
+
+  if(!joined){
+    html+=`<div class="pool-hero">
+      <div class="pool-title">Prediction Pool</div>
+      <div class="pool-sub">Build your bracket under <b>Bracket → Pick</b>, then join a group to see everyone's scores ranked live against the real results as they land.</div>
+    </div>
+    <div class="pool-form">
+      <label class="pool-l">Group code</label>
+      <input id="pj-group" class="pool-in" autocapitalize="characters" placeholder="e.g. FRISCO26">
+      <label class="pool-l">Your name</label>
+      <input id="pj-name" class="pool-in" placeholder="e.g. Sandy">
+      ${live?'':`<label class="pool-l">Leaderboard server URL <span class="pool-dim">(optional — leave blank for offline / share-code only)</span></label>
+        <input id="pj-url" class="pool-in" placeholder="https://wc26-pool.you.workers.dev">`}
+      <button id="pj-join" class="btn primary pool-join">Join / create group</button>
+      <div class="pool-note">${live?'Anyone with the group code can join and appears on one shared board.':'No server set yet — you can still build a board by importing friends’ share-codes. Add a Worker URL to make it live for everyone.'}</div>
+      <button id="pj-import" class="pool-link">Import a friend’s code instead ↓</button>
+    </div>`;
+    host.innerHTML=html;
+    const gI=document.getElementById('pj-group'), nI=document.getElementById('pj-name'), uI=document.getElementById('pj-url');
+    document.getElementById('pj-join').onclick=async()=>{
+      const g=(gI.value||'').trim().toUpperCase().replace(/[^A-Z0-9_-]/g,'').slice(0,32), n=(nI.value||'').trim().slice(0,40);
+      if(!g){ gI.focus(); return; } if(!n){ nI.focus(); return; }
+      if(uI&&uI.value.trim()){ prefs.boardUrl=uI.value.trim().replace(/\/+$/,''); }
+      prefs.poolGroup=g; prefs.poolName=n; save('wc26_prefs',prefs);
+      if(boardUrl()){ try{ await poolSubmit(g,n,encodePrediction(myPrediction(applyOverrides(RAW)),applyOverrides(RAW))); }catch(e){ _poolErr=e.message; } }
+      poolStartPolling(); poolRefresh(false);
+    };
+    document.getElementById('pj-import').onclick=()=>{ const c=prompt('Paste a friend’s WC26 share-code:'); if(c&&addLocalCode(c.trim(),applyOverrides(RAW))){ if(!prefs.poolName){ prefs.poolName='You'; } if(!prefs.poolGroup){ prefs.poolGroup='LOCAL'; } save('wc26_prefs',prefs); renderPool(); } else if(c){ alert('That code didn’t look right.'); } };
+    return;
+  }
+
+  const {list,real,myLive,submitted,unsaved,myName}=buildPoolEntries(matches);
+  const me=list.find(e=>e.me)||{};
+  const champCell=code=> code&&TEAMS[code]?`<span class="flag">${TEAMS[code][1]}</span>`:'<span class="pc-none">—</span>';
+  const decided = real.champ!=null;
+
+  html+=`<div class="pool-top">
+    <div class="pool-grp"><span class="pool-grp-k">GROUP</span><span class="pool-grp-v">${prefs.poolGroup}</span></div>
+    <div class="pool-meta">${live?`<span class="pool-live"><span class="livedot"></span>live · ${list.length} ${list.length===1?'player':'players'}</span>`:`<span class="pool-off">offline · ${list.length} ${list.length===1?'entry':'entries'}</span>`}</div>
+    <button id="pool-refresh" class="iconbtn" title="Refresh">↻</button>
+  </div>`;
+  if(_poolErr) html+=`<div class="pool-warn">Couldn’t reach the server (${_poolErr}). Showing the last data + your local entries.</div>`;
+
+  // my status
+  const myRank=me.rank||'—', picks=poolPicksCount();
+  html+=`<div class="pool-me">
+    <div class="pm-row">
+      <div class="pm-rank">#${myRank}</div>
+      <div class="pm-mid"><div class="pm-name">${myName} <span class="pm-you">you</span></div>
+        <div class="pm-sub">${champCell(me.champ)} ${me.champ&&TEAMS[me.champ]?TEAMS[me.champ][0]:'no champion yet'} · ${picks}/32 picks</div></div>
+      <div class="pm-score">${me.score||0}<span class="pm-pts">pts</span></div>
+    </div>
+    <div class="pm-actions">
+      <button id="pa-submit" class="btn ${unsaved||!submitted?'primary':''} pool-act">${live?(submitted?(unsaved?'Update entry':'Re-submit'):'Submit to group'):'Save my entry'}</button>
+      <button id="pa-copy" class="btn pool-act">Copy my code</button>
+      <button id="pa-invite" class="btn pool-act">Invite</button>
+      <button id="pa-import" class="btn pool-act">Import code</button>
+    </div>
+    ${unsaved?'<div class="pm-flag">You’ve changed your picks since you last submitted — tap <b>Update entry</b> to push them.</div>':''}
+    ${!submitted&&live?'<div class="pm-flag">Your entry isn’t in the group yet — tap <b>Submit to group</b> so others can see it.</div>':''}
+  </div>`;
+
+  // leaderboard
+  html+=`<div class="pool-board-h">Leaderboard</div><div class="pool-board">`;
+  list.forEach(e=>{
+    const open=_poolOpen.has(e.name.toLowerCase());
+    const champOk = decided && e.champ===real.champ;
+    const p=e.parts||{};
+    html+=`<div class="lb-row${e.me?' me':''}${open?' open':''}" data-name="${e.name.toLowerCase()}">
+      <div class="lb-main">
+        <div class="lb-rank">${e.rank}</div>
+        <div class="lb-name">${e.name}${e.me?'':''}<div class="lb-src">${e.source==='server'?'':e.source==='local'?'imported':e.me?(submitted?'':'not submitted'):''}</div></div>
+        <div class="lb-champ">${champCell(e.champ)}${champOk?'<span class="lb-ok">✓</span>':''}</div>
+        <div class="lb-score">${e.score}</div>
+        <div class="lb-exp">${open?'▾':'▸'}</div>
+      </div>
+      <div class="lb-detail">
+        <div class="lb-bd">
+          ${[['Group',p.group],['R16',p.r16],['QF',p.qf],['SF',p.sf],['Final',p.final],['Champ',p.champ],['3rd',p.bronze]].map(([k,v])=>`<div class="bd-c"><div class="bd-k">${k}</div><div class="bd-v">${v||0}</div></div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  });
+  html+=`</div>`;
+
+  // scoring key
+  html+=`<div class="pool-key"><b>Scoring</b> · exact group spot ${SCORING.groupExact} · reach R16 ${SCORING.r16} · QF ${SCORING.qf} · SF ${SCORING.sf} · finalist ${SCORING.final} · champion ${SCORING.champ} · 3rd ${SCORING.bronze}. Knockouts scored by who you correctly send to each round, so an early upset won’t zero your bracket.</div>
+    <button id="pool-leave" class="pool-link" style="margin-top:14px">Leave group</button>`;
+
+  host.innerHTML=html;
+
+  // wiring
+  document.getElementById('pool-refresh').onclick=()=>poolRefresh(false);
+  document.getElementById('pa-copy').onclick=()=>{ copyText(myLive); toast('Your code is copied — paste it to a friend.'); };
+  document.getElementById('pa-invite').onclick=()=>{ const inv=`Join my World Cup 2026 pool — group code: ${prefs.poolGroup}${boardUrl()?'\n'+location.href:''}`; copyText(inv); toast('Invite copied.'); };
+  document.getElementById('pa-import').onclick=()=>{ const c=prompt('Paste a friend’s WC26 share-code:'); if(c&&addLocalCode(c.trim(),applyOverrides(RAW))){ renderPool(); } else if(c){ alert('That code didn’t look right.'); } };
+  document.getElementById('pa-submit').onclick=async()=>{
+    if(!boardUrl()){ addLocalCode(myLive,applyOverrides(RAW)); toast('Saved locally. Add a server URL to share live.'); renderPool(); return; }
+    const b=document.getElementById('pa-submit'); b.disabled=true; b.textContent='Saving…';
+    try{ await poolSubmit(prefs.poolGroup,prefs.poolName,myLive); toast('Submitted to '+prefs.poolGroup+'.'); await poolRefresh(true); }
+    catch(e){ alert('Submit failed: '+e.message); b.disabled=false; }
+  };
+  document.getElementById('pool-leave').onclick=()=>{ if(confirm('Leave this group? Your picks stay saved on this device.')){ delete prefs.poolGroup; delete prefs.poolName; save('wc26_prefs',prefs); _poolEntries=null; poolStopPolling(); renderPool(); } };
+  host.querySelectorAll('.lb-row').forEach(r=>{ r.querySelector('.lb-main').onclick=()=>{ const n=r.dataset.name; if(_poolOpen.has(n)) _poolOpen.delete(n); else _poolOpen.add(n); renderPool(); }; });
+}
+function toast(msg){ let t=document.getElementById('wc-toast'); if(!t){ t=document.createElement('div'); t.id='wc-toast'; t.className='wc-toast'; document.body.appendChild(t); } t.textContent=msg; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2600); }
+
 function renderR32(matches){
   const mode = prefs.bracketMode || 'decide';
-  const seed = (mode !== 'decide');   // fill R32 from current standings when projecting or picking
+  const seed = (mode !== 'decide');   // fill R32 from standings when projecting/predicting/picking
+  // table source: Predicted mode seeds from expected-points projected final standings; others use the live table
+  const PT = (mode==='predict') ? projectedStandings(matches) : TABLES;
   // ---- group-stage resolution ----
   const W={},R={};
-  for(const g in TABLES){ const r=TABLES[g].rows; if(r[0])W[g]=r[0].code; if(r[1])R[g]=r[1].code; }
-  const completeGroups=Object.keys(TABLES).filter(g=>TABLES[g].complete);
+  for(const g in PT){ const r=PT[g].rows; if(r[0])W[g]=r[0].code; if(r[1])R[g]=r[1].code; }
+  const completeGroups=Object.keys(PT).filter(g=>PT[g].complete);
   const allDone=completeGroups.length===12;
-  const thirds=bestThirds(TABLES);
-  const top8groups=thirds.slice(0,8).map(t=>t.g);
+  const thirds=bestThirds(PT);
+  let top8groups=thirds.slice(0,8).map(t=>t.g);
   const thirdByGroup={}; thirds.forEach(t=>thirdByGroup[t.g]=t.code);
+  // ---- PICK mode: seed entirely from the user's predicted group finishes ----
+  const GROUPS=Object.keys(TABLES).sort();
+  const teamsOf=g=>TABLES[g]?TABLES[g].rows.map(r=>r.code):[];
+  const orderOf=g=>{const u=userGroupOrder[g],tm=teamsOf(g);return (u&&u.length===tm.length&&u.every(c=>tm.includes(c)))?u:tm;};
+  if(mode==='pick'){
+    const projT=projectedStandings(matches);
+    const ptsOf=code=>{for(const g in projT){const r=projT[g].rows.find(x=>x.code===code);if(r)return r.Pts;}return 0;};
+    for(const g of GROUPS){const o=orderOf(g); if(o[0])W[g]=o[0]; if(o[1])R[g]=o[1]; thirdByGroup[g]=o[2];}
+    const ranked=GROUPS.map(g=>({g,code:thirdByGroup[g],pts:ptsOf(thirdByGroup[g])})).filter(x=>x.code).sort((a,b)=>b.pts-a.pts||rankOf(a.code)-rankOf(b.code));
+    top8groups=ranked.slice(0,8).map(t=>t.g);
+  }
   let thirdAssign={};
   if(allDone || seed) thirdAssign=assignThirds(top8groups);
 
@@ -1459,25 +1883,26 @@ function renderR32(matches){
   matches.forEach(m=>{ if(m.num&&m.num>=73&&m.played){ realWin[m.num]= m.s1>m.s2?m.t1:(m.s2>m.s1?m.t2:m.t1); realScore[m.num]=[m.s1,m.s2]; }});
 
   function resolveGroupSlot(s, num){
+    const pk=(mode==='pick');
     if(s[0]==='1'||s[0]==='2'){
-      const g=s[1]; if(!TABLES[g]) return {code:null};
-      const locked=TABLES[g].complete;
+      const g=s[1]; if(!PT[g]) return {code:null};
+      const locked=PT[g].complete;
       if(!locked && !seed) return {code:null};
-      return { code: s[0]==='1'?W[g]:R[g], provisional:!locked };
+      return { code: s[0]==='1'?W[g]:R[g], provisional: pk?false:!locked };
     }
     if(s[0]==='3'){
       if(!allDone && !seed) return {code:null};
       const g=thirdAssign[num]; if(!g) return {code:null};
-      return { code: thirdByGroup[g], provisional:!allDone };
+      return { code: thirdByGroup[g], provisional: pk?false:!allDone };
     }
     return {code:null};
   }
 
   // decide each match's winner per mode
   function decideWinner(num, a, b){
+    if(mode==='pick'){ const p=userPicks[num]; return (p===a||p===b)?{w:p, pick:true}:{w:null}; }  // pure prediction; real results compared in scoring, not overlaid
     if(realWin[num]) return {w:realWin[num], real:true};
-    if(mode==='pick'){ const p=userPicks[num]; return (p===a||p===b)?{w:p, pick:true}:{w:null}; }
-    if(mode==='project' && a && b) return {w:pickWinner(a,b), provisional:true};
+    if((mode==='project'||mode==='predict') && a && b) return {w:pickWinner(a,b), provisional:true};
     return {w:null};
   }
 
@@ -1501,7 +1926,7 @@ function renderR32(matches){
   let bw=null,bpick=false,bprov=false;
   if(bl1&&bl2){
     if(mode==='pick'){ const p=userPicks['bronze']; if(p===bl1||p===bl2){ bw=p; bpick=true; } }
-    else if(mode==='project'){ bw=pickWinner(bl1,bl2); bprov=true; }
+    else if(mode==='project'||mode==='predict'){ bw=pickWinner(bl1,bl2); bprov=true; }
   }
   M['bronze']={a:bl1,b:bl2,winner:bw,loser:bw?(bw===bl1?bl2:bl1):null,provisional:bprov,pick:bpick,slotA:'L101',slotB:'L102'};
   const champion=M[104]?.winner||null;
@@ -1576,9 +2001,51 @@ function renderR32(matches){
     ch=Math.max(ch, by+CARD_H+28);
   }
 
-  const hintTxt = mode==='pick'?'Tap a team to send it through — swipe across the rounds to the final.':(mode==='project'?'Projected from current standings + live market odds. Swipe across the rounds.':'Fills in as group results land. Switch to “Pick your own” to build it yourself.');
+  // ---- group-order prediction editor (pick mode only) ----
+  let predHTML='';
+  if(mode==='pick'){
+    const collapsed=!!prefs.predCollapsed;
+    const startBtns=`<div class="pred-start">
+        <span class="pred-start-lbl">Start from</span>
+        <button class="pred-sb" data-start="blank">Blank</button>
+        <button class="pred-sb" data-start="current">Current</button>
+        <button class="pred-sb" data-start="predicted">Predicted</button>
+      </div>`;
+    const groupCards=GROUPS.map(g=>{
+      const o=orderOf(g), adv=top8groups.includes(g);
+      const rows=o.map((code,i)=>{
+        const t=TEAMS[code]||[code,'🏳️'];
+        const isThird=(i===2);
+        const tag=isThird?`<span class="pred-adv${adv?' on':''}">${adv?'adv':'out'}</span>`:(i<2?'<span class="pred-q">✓</span>':'<span class="pred-q out">—</span>');
+        return `<div class="pred-row${i<2?' qual':''}${isThird?' third':''}">
+            <span class="pred-pos">${i+1}</span>
+            <span class="pred-flag">${t[1]}</span>
+            <span class="pred-name">${t[0]}</span>
+            ${tag}
+            <span class="pred-ar">
+              <button class="pred-mv" data-g="${g}" data-i="${i}" data-dir="-1"${i===0?' disabled':''} aria-label="up">▲</button>
+              <button class="pred-mv" data-g="${g}" data-i="${i}" data-dir="1"${i===o.length-1?' disabled':''} aria-label="down">▼</button>
+            </span>
+          </div>`;
+      }).join('');
+      return `<div class="pred-g"><div class="pred-g-h">Group ${g}</div>${rows}</div>`;
+    }).join('');
+    predHTML=`<div class="pred-panel">
+      <div class="pred-head">
+        <div class="pred-head-tx">
+          <div class="pred-title">Your bracket prediction</div>
+          <div class="pred-sub">Order each group — top 2 advance, plus the 8 best 3rd-place teams. Then tap through the knockouts to your champion.</div>
+        </div>
+        <button class="pred-toggle" id="pred-toggle">${collapsed?'Edit ▸':'Hide ▾'}</button>
+      </div>
+      ${collapsed?'':startBtns}
+      ${collapsed?'':`<div class="pred-groups">${groupCards}</div>`}
+    </div>`;
+  }
+
+  const hintTxt = mode==='pick'?'Tap a team to send it through — swipe across the rounds to the final.':(mode==='predict'?'Remaining group games projected by win probability (expected points), then top 2 + 8 best thirds seed the bracket. Knockouts by odds.':(mode==='project'?'Seeded from the group tables exactly as they stand right now. Knockouts projected by odds.':'Fills in as group results land. Switch to a projection or “Pick” to build it out.'));
   const chips = BKT_COLS.map((col,c)=>`<button class="bkt-chip ${c===0?'on':''}" data-col="${c}">${col.full}</button>`).join('');
-  let html=`<div class="bkt-hint">${hintTxt}</div>
+  let html=predHTML+`<div class="bkt-hint">${hintTxt}</div>
     <div class="bkt-rounds" id="bkt-rounds">${chips}</div>
     <div class="bkt-wrap" id="bkt-wrap">
       <div class="bkt-canvas" style="width:${cw}px;height:${ch}px">
@@ -1593,6 +2060,7 @@ function renderR32(matches){
       <div class="note">${note}</div>${mode==='pick'?'<button class="btn primary" id="share-pick" style="margin-top:12px">Share my pick</button>':''}</div>`;
   }
   document.getElementById('r32').innerHTML=html;
+  { const _sc=document.querySelector('.wrap'); if(_pickScroll!=null && _sc){ _sc.scrollTop=_pickScroll; } _pickScroll=null; }
   { const _sp=document.getElementById('share-pick'); if(_sp) _sp.onclick=shareMyPick; }
 
   // round-chip navigation → smooth-scroll the canvas horizontally; restore pan after a pick
@@ -1606,12 +2074,41 @@ function renderR32(matches){
 
   // pick-mode interactions
   if(mode==='pick'){
+    const scr=document.querySelector('.wrap');
+    const reRender=()=>{ if(wrap) _bktScroll={x:wrap.scrollLeft,y:wrap.scrollTop}; _pickScroll=scr?scr.scrollTop:null; renderR32(applyOverrides(RAW)); };
+    // reorder a group via ▲▼
+    document.querySelectorAll('.pred-mv').forEach(b=>{
+      b.onclick=()=>{
+        const g=b.dataset.g, i=+b.dataset.i, dir=+b.dataset.dir, j=i+dir;
+        const cur=(userGroupOrder[g]&&userGroupOrder[g].length===4)?userGroupOrder[g].slice():orderOf(g).slice();
+        if(j<0||j>=cur.length) return;
+        [cur[i],cur[j]]=[cur[j],cur[i]];
+        userGroupOrder[g]=cur; save('wc26_grouporder',userGroupOrder); reRender();
+      };
+    });
+    // start-from presets
+    document.querySelectorAll('.pred-sb').forEach(b=>{
+      b.onclick=()=>{
+        const kind=b.dataset.start;
+        const src = kind==='predicted'?projectedStandings(applyOverrides(RAW)) : (kind==='current'?TABLES:null);
+        GROUPS.forEach(g=>{
+          if(kind==='blank') userGroupOrder[g]=teamsOf(g).slice().sort((x,y)=>rankOf(x)-rankOf(y));
+          else if(src&&src[g]) userGroupOrder[g]=src[g].rows.map(r=>r.code);
+        });
+        save('wc26_grouporder',userGroupOrder); reRender();
+      };
+    });
+    // collapse / expand the editor
+    const pt=document.getElementById('pred-toggle');
+    if(pt) pt.onclick=()=>{ prefs.predCollapsed=!prefs.predCollapsed; save('wc26_prefs',prefs); _pickScroll=scr?scr.scrollTop:null; renderR32(applyOverrides(RAW)); };
+    // knockout picks
     document.querySelectorAll('.bkt-slot.pickable').forEach(el=>{
       el.onclick=()=>{
         const num=el.dataset.pnum, code=el.dataset.pcode;
         const key = num==='bronze'?'bronze':+num;
         const hadChamp = !!(M[104]&&M[104].winner);
         if(wrap) _bktScroll={x:wrap.scrollLeft,y:wrap.scrollTop};
+        _pickScroll=scr?scr.scrollTop:null;
         if(userPicks[key]===code) delete userPicks[key]; else userPicks[key]=code;
         save('wc26_userpicks',userPicks);
         const pickedFinal = (key===104 && userPicks[104]);
@@ -2177,7 +2674,8 @@ function renderMatchStats(e,c1,c2){
     const a=isFinite(n1)?n1:0, b=isFinite(n2)?n2:0, tot=a+b;
     const p1=tot>0?Math.round(a/tot*100):50;
     const fmt=v=>v==null?'\u2013':(m.pct&&!String(v).includes('%')?v+'%':String(v));
-    rows+=`<div class="ms-row"><span class="ms-v">${fmt(v1)}</span><span class="ms-l">${m.label}</span><span class="ms-v">${fmt(v2)}</span></div><div class="ms-bar"><span class="ms-fill l" style="width:${p1}%"></span><span class="ms-fill r" style="width:${100-p1}%"></span></div>`;
+    const lead1=a>b, lead2=b>a;
+    rows+=`<div class="ms-row"><span class="ms-v l ${lead1?'lead':''}">${fmt(v1)}</span><span class="ms-l">${m.label}</span><span class="ms-v r ${lead2?'lead':''}">${fmt(v2)}</span></div><div class="ms-bar"><span class="ms-fill l" style="width:${p1}%"></span><span class="ms-fill r" style="width:${100-p1}%"></span></div>`;
   });
   return rows?`<div class="tc-sec"><div class="h">Match stats</div>${rows}</div>`:'';
 }
@@ -2396,8 +2894,9 @@ function winProb(m){
   return Object.assign(modelProbs(base,f,d),{src: usable?'market+live':'model'});
 }
 function wpBar(p,nm1,nm2,label){
-  const seg=(v,cls)=>`<span class="wp-seg ${cls}" style="flex:${Math.max(v,0.04)}">${Math.round(v*100)}</span>`;
-  return `<div class="tc-sec"><div class="h">${label}</div><div class="wp-bar">${seg(p.p1,'wp-1')}${seg(p.pd,'wp-d')}${seg(p.p2,'wp-2')}</div><div class="wp-lbl"><span>${nm1}</span><span>Draw</span><span>${nm2}</span></div></div>`;
+  const pc=v=>Math.round((v||0)*100);
+  const seg=(v,cls)=>`<span class="wp-seg ${cls}" style="flex:${Math.max(v||0,0.012)}"></span>`;
+  return `<div class="tc-sec"><div class="h">${label}</div><div class="wp-bar">${seg(p.p1,'wp-1')}${seg(p.pd,'wp-d')}${seg(p.p2,'wp-2')}</div><div class="wp-lbl"><div class="wp-col l"><span class="wp-nm">${nm1}</span><span class="wp-pct">${pc(p.p1)}%</span></div><div class="wp-col c"><span class="wp-nm">Draw</span><span class="wp-pct">${pc(p.pd)}%</span></div><div class="wp-col r"><span class="wp-nm">${nm2}</span><span class="wp-pct">${pc(p.p2)}%</span></div></div></div>`;
 }
 // ---- PLAYER PROPS (model projection: who scores / assists) ----
 function matchXG(m){
@@ -2478,7 +2977,9 @@ function openPlayer(name, team){
   document.getElementById('player-card').innerHTML=`<button class="tc-close" id="pl-x">\u00d7</button>
     <div class="pl-head"><span class="flag">${t?t[1]:'\uD83C\uDFF3\uFE0F'}</span><div><div class="nm">${name}</div><div class="gp tlink" data-team="${team}">${t?t[0]:team}</div></div></div>
     <div class="pl-tiles">${tiles.map(([k,v])=>`<div class="pl-tile"><div class="pv">${v}</div><div class="pk2">${k}</div></div>`).join('')}</div>
-    <div class="tc-sec"><div class="h">Goals${p.pens?' \u00b7 '+p.pens+' pen':''}</div>${gl}</div>`;
+    <div class="tc-sec"><div class="h">Goals${p.pens?' \u00b7 '+p.pens+' pen':''}</div>${gl}</div>
+    <a class="fbref-btn" href="https://fbref.com/search/search.fcgi?search=${encodeURIComponent(name)}" target="_blank" rel="noopener"><span>View full profile on FBref</span><span class="arr">\u2197</span></a>
+    <div class="fbref-cap">Career stats \u00b7 match logs \u00b7 scouting report</div>`;
   document.getElementById('pl-x').onclick=()=>document.getElementById('player-modal').classList.remove('on');
   document.getElementById('player-modal').classList.add('on');
 }
@@ -2567,10 +3068,12 @@ function showTab(tab){
   sub('view-scorers', tab==='standings'&&sSub==='scorers');
   sub('view-market', tab==='forecast'&&fSub==='market');
   sub('view-forecast', tab==='forecast'&&fSub==='simulate');
+  sub('sec-pool', tab==='pool');
   sub('subnav-standings', tab==='standings');
   sub('subnav-forecast', tab==='forecast');
   if(tab==='hq' && !hqFix) renderToday();
   if(hqFix) renderFixtures(applyOverrides(RAW));
+  if(tab==='pool'){ renderPool(); poolStartPolling(); if(boardUrl()&&prefs.poolGroup) poolRefresh(true); } else { poolStopPolling(); }
   const _wrap=document.querySelector('.wrap'); if(_wrap) _wrap.scrollTop=0; else window.scrollTo(0,0);
 }
 // First match that hasn't ended yet: live now, or kicks off in the future.
